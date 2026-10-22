@@ -1,0 +1,348 @@
+:root {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color: #292e29;
+  background: #f5f1e9;
+  font-synthesis: none;
+  line-height: 1.65;
+  --accent: #9c432a;
+  --muted: #596258;
+  --stroke: #d6d6c9;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+select,
+input {
+  font: inherit;
+}
+button,
+select {
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 0.65rem 1rem;
+}
+button {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  cursor: pointer;
+  font-weight: 650;
+  box-shadow:
+    inset 0 2px 1px #ffffff24,
+    0 3px 0 #783522;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 3px solid #245974;
+  outline-offset: 4px;
+}
+.shell {
+  max-width: 1240px;
+  margin: auto;
+  padding: 0 3rem;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.6rem 0;
+  border-bottom: 1px solid var(--stroke);
+}
+.brand {
+  color: inherit;
+  text-decoration: none;
+  font-size: 1.8rem;
+  font-weight: 850;
+  letter-spacing: -0.08rem;
+}
+.brand span {
+  color: var(--accent);
+}
+.language {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+}
+select {
+  background: #fffdf8;
+}
+.intro {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: 3rem;
+  padding: 3.5rem 0;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: var(--muted);
+}
+h1 {
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+  margin: 0.8rem 0 1.1rem;
+  max-width: 650px;
+}
+.lede {
+  color: var(--muted);
+  max-width: 540px;
+  font-size: 1.05rem;
+}
+.expression-object {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transform: rotate(-4deg);
+}
+.expression-object span {
+  width: 70px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 750;
+  border-radius: 22px;
+  background: #e8b69d;
+  color: #563625;
+  box-shadow:
+    inset 4px 4px 7px #fff5e775,
+    inset -4px -5px 8px #96553b25,
+    0 8px 0 #d0a087;
+}
+.expression-object .result {
+  background: #c2ceb2;
+  box-shadow:
+    inset 4px 4px 7px #f4ffdf75,
+    inset -4px -5px 8px #59684725,
+    0 8px 0 #a7b699;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+.path {
+  padding-top: 0.6rem;
+}
+.lesson-link {
+  width: 100%;
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  text-align: left;
+  margin: 0.6rem 0;
+  padding: 0.65rem;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+}
+.lesson-link[aria-current] {
+  background: #e8ecdf;
+  border-color: #b3bea7;
+}
+@media (max-width: 760px) {
+  .workspace .path {
+    display: block;
+  }
+  .path > p:not(.eyebrow),
+  .path .free-label {
+    display: none;
+  }
+  .path nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .lesson-link {
+    width: auto;
+    flex: 1 1 180px;
+  }
+}
+.path-step {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 1.4rem 0;
+}
+.step-number {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: #dfe5d5;
+  box-shadow:
+    inset 2px 2px 3px #ffffffaa,
+    0 3px 0 #c7d1bc;
+  font-weight: 750;
+}
+.path-step strong,
+.path-step small {
+  display: block;
+}
+.path > p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.free-label {
+  display: block;
+  margin-top: 2rem;
+  font-size: 0.8rem;
+}
+.lesson {
+  background: #fffdf8;
+  border: 1px solid var(--stroke);
+  border-radius: 24px;
+  padding: 2.2rem;
+  min-height: 400px;
+}
+.lesson-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+h2 {
+  font-size: 1.8rem;
+  letter-spacing: -0.025em;
+  margin: 1.3rem 0 0.3rem;
+  line-height: 1.2;
+}
+.objective {
+  color: var(--accent);
+  margin-top: 0.6rem;
+  font-weight: 600;
+}
+.explanation {
+  margin: 1.8rem 0;
+}
+pre {
+  overflow-x: auto;
+  background: #edece4;
+  border: 1px solid #d9dbcf;
+  padding: 1.2rem;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1.5rem 0;
+  min-width: 0;
+}
+legend {
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid #a6afa2;
+  border-radius: 12px;
+  padding: 0.8rem 1.3rem;
+  cursor: pointer;
+  background: #f8f7f1;
+}
+.choice.selected {
+  border-color: var(--accent);
+  background: #f5e5d9;
+}
+input {
+  accent-color: var(--accent);
+}
+.practice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+.practice-actions small,
+.practice-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.feedback {
+  border-left: 4px solid #667d50;
+  padding: 0.5rem 1rem;
+  background: #eff2e8;
+  margin-top: 1.8rem;
+}
+.feedback h3,
+.feedback h4 {
+  margin: 0.4rem 0;
+}
+.practice-note {
+  margin-top: 1.5rem;
+}
+footer {
+  color: var(--muted);
+  padding: 2rem 0;
+  font-size: 0.75rem;
+}
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 2;
+  background: white;
+  padding: 1rem;
+}
+@media (max-width: 760px) {
+  .shell {
+    padding: 0 1.2rem;
+  }
+  .intro {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 2rem 0;
+  }
+  .expression-object {
+    display: none;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .path {
+    display: none;
+  }
+  .lesson {
+    padding: 1.3rem;
+  }
+  .language {
+    font-size: 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

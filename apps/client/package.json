@@ -1,0 +1,22 @@
+{
+  "name": "@learntify/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@learntify/api-client": "workspace:*",
+    "@learntify/api-contracts": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "learntify": {
+    "layer": "browser"
+  }
+}

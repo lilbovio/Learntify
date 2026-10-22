@@ -1,0 +1,36 @@
+{
+  "name": "learntify",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev:client": "pnpm --filter @learntify/client dev",
+    "dev:server": "pnpm --filter @learntify/server dev",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:boundaries": "node tooling/architecture/check.mjs",
+    "test:boundaries": "node --test tooling/architecture/check.test.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "build": "pnpm --filter @learntify/client build && pnpm --filter @learntify/server build",
+    "check": "pnpm format:check && pnpm check:boundaries && pnpm typecheck && pnpm test:boundaries && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "miniflare": "4.20260730.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5",
+    "wrangler": "4.151.3"
+  }
+}
