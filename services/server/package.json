@@ -13,6 +13,7 @@
     "build": "wrangler deploy --dry-run --outdir dist"
   },
   "dependencies": {
+    "@learntify/email": "workspace:*",
     "@learntify/api-contracts": "workspace:*",
     "@learntify/curriculum": "workspace:*",
     "@learntify/learning": "workspace:*",

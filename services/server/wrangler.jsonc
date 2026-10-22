@@ -1,7 +1,9 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "learntify-api",
-  "main": "src/index.ts",
+  "main": "src/production.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": { "ACCOUNT_MODE": "disabled" },
   "compatibility_date": "2026-10-21",
   "workers_dev": false,
   "send_metrics": false,

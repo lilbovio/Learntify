@@ -14,7 +14,7 @@ beforeEach(async () => {
   });
   db = await runtime.getD1Database('DB');
   const sql = await readFile(
-    new URL('../migrations/0001_email_budget.sql', import.meta.url),
+    new URL('../../../services/server/migrations/0004_email_budget.sql', import.meta.url),
     'utf8',
   );
   await db.prepare(sql).run();

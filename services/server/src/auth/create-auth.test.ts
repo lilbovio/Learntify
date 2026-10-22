@@ -7,6 +7,7 @@ import { createAccountRoutes } from './routes';
 import { readFile } from 'node:fs/promises';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { createApp } from '../index';
+import production from '../production';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
 describe('passwordless authentication with local D1', () => {
@@ -53,6 +54,30 @@ describe('passwordless authentication with local D1', () => {
     expect(plan.toBeAdded).toEqual([]);
     expect(plan.toBeAddedIndexes).toEqual([]);
     expect(plan.schemaProblems).toEqual([]);
+  });
+  it('composes production account routes with D1 but keeps signup and deletion closed', async () => {
+    const bindings = {
+      ACCOUNT_MODE: 'existing-accounts',
+      APP_ORIGIN: origin,
+      AUTH_SECRET: 'a'.repeat(40),
+      RESEND_API_KEY: 're_' + 'b'.repeat(24),
+      EMAIL_FROM: 'learn@learntify.test',
+      DB: db,
+    };
+    const response = await production.fetch(new Request(origin + '/api/v1/capabilities'), bindings);
+    expect(await response.json()).toMatchObject({
+      data: { accounts: true, cloudDrafts: true, preferences: true, accountDeletion: false },
+    });
+    expect((await production.fetch(new Request(origin + '/api/v1/me'), bindings)).status).toBe(401);
+    const deletion = await production.fetch(
+      new Request(origin + '/api/auth/delete-user', {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      }),
+      bindings,
+    );
+    expect(deletion.status).toBe(404);
   });
   it('requires explicit adult confirmation before issuing a link', async () => {
     const response = await createAccountRoutes(auth).request(

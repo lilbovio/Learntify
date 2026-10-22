@@ -98,6 +98,9 @@ importers:
       '@learntify/draft-storage':
         specifier: workspace:*
         version: link:../../adapters/drafts
+      '@learntify/email':
+        specifier: workspace:*
+        version: link:../../adapters/email
       '@learntify/learning':
         specifier: workspace:*
         version: link:../../modules/learning
