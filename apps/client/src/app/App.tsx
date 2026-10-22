@@ -4,10 +4,15 @@ import type { Lesson, LessonListItem, Locale } from '@learntify/api-contracts';
 import { localeFromSearch } from '../features/lesson/local-choice';
 import { LessonWorkspace } from '../features/lesson/LessonWorkspace';
 import { copy } from '../shared/copy';
+import { AccountPanel } from '../features/account/AccountPanel';
+import { LessonNotes } from '../features/draft/LessonNotes';
+import { draftCopy } from '../features/draft/copy';
 
 const api = createApiClient();
 export function App() {
   const [locale, setLocale] = useState<Locale>(() => localeFromSearch(window.location.search));
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [notesDirty, setNotesDirty] = useState(false);
   const [lessons, setLessons] = useState<LessonListItem[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState(
     () => new URLSearchParams(window.location.search).get('lesson') ?? 'values-and-expressions',
@@ -77,6 +82,7 @@ export function App() {
         </label>
       </header>
       <main>
+        <AccountPanel locale={locale} onAccountChange={setAccountId} unsavedNotes={notesDirty} />
         <section className="intro" aria-labelledby="welcome">
           <div>
             <p className="eyebrow">{text.eyebrow}</p>
@@ -100,7 +106,10 @@ export function App() {
                   className="lesson-link"
                   key={item.id}
                   aria-current={currentLessonId === item.id ? 'step' : undefined}
-                  onClick={() => setCurrentLessonId(item.id)}
+                  onClick={() => {
+                    if (!notesDirty || window.confirm(draftCopy[locale].leave))
+                      setCurrentLessonId(item.id);
+                  }}
                 >
                   <span className="step-number">{String(index + 1).padStart(2, '0')}</span>
                   <span>{item.title}</span>
@@ -132,6 +141,15 @@ export function App() {
                   lesson={lesson}
                   locale={locale}
                 />
+                {accountId && (
+                  <LessonNotes
+                    key={accountId + ':' + lesson.id + ':' + lesson.version}
+                    lessonId={lesson.id}
+                    version={lesson.version}
+                    locale={locale}
+                    onDirty={setNotesDirty}
+                  />
+                )}
               </div>
             )}
           </article>

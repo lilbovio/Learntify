@@ -23,7 +23,54 @@ describe('passwordless authentication with local D1', () => {
     });
     db = (await runtime.getD1Database('DB')) as unknown as D1Database;
     deliveries = [];
+    const schema = await readFile(
+      new URL('../../migrations/0001_auth.sql', import.meta.url),
+      'utf8',
+    );
+    for (const statement of schema
+      .replace(/^--.*$/gm, '')
+      .split(';')
+      .filter((part) => part.trim()))
+      await db.prepare(statement).run();
+    // Initialize auth only after migrations: the provider validates schema eagerly.
     auth = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      allowSignUp: true,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+  });
+  afterEach(async () => {
+    await runtime?.dispose();
+  });
+  it('keeps the committed schema aligned with the pinned auth configuration', async () => {
+    const plan = await getMigrations(auth.options);
+    expect(plan.toBeCreated).toEqual([]);
+    expect(plan.toBeAdded).toEqual([]);
+    expect(plan.toBeAddedIndexes).toEqual([]);
+    expect(plan.schemaProblems).toEqual([]);
+  });
+  it('requires explicit adult confirmation before issuing a link', async () => {
+    const response = await createAccountRoutes(auth).request(
+      origin + '/api/auth/sign-in/magic-link',
+      {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'learner@example.com' }),
+      },
+    );
+    expect(response.status).toBe(422);
+    expect(deliveries).toHaveLength(0);
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM verification').first<{ count: number }>())
+        ?.count,
+    ).toBe(0);
+  });
+  it('defaults to closed signup even with a valid link', async () => {
+    const closed = createAuth({
       database: db,
       secret: 'test-only-secret-with-at-least-32-characters',
       origin,
@@ -31,18 +78,23 @@ describe('passwordless authentication with local D1', () => {
         deliveries.push(message);
       },
     });
-    // Disposable test databases only. Production uses reviewed, versioned migrations.
-    await (await getMigrations(auth.options)).runMigrations();
-  });
-  afterEach(async () => {
-    await runtime?.dispose();
+    await requestLink(closed);
+    const response = await closed.handler(new Request(deliveries[0]!.url));
+    expect(response.headers.get('location')).toContain('new_user_signup_disabled');
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM user').first<{ count: number }>())?.count,
+    ).toBe(0);
   });
   const requestLink = (auth: LearntifyAuth, requestOrigin = origin) =>
     createAccountRoutes(auth).request(
       new Request(origin + '/api/auth/sign-in/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: requestOrigin },
-        body: JSON.stringify({ email: 'learner@example.com', callbackURL: '/' }),
+        body: JSON.stringify({
+          email: 'learner@example.com',
+          callbackURL: '/',
+          metadata: { adultConfirmed: true },
+        }),
       }),
     );
 
@@ -92,7 +144,7 @@ describe('passwordless authentication with local D1', () => {
   });
   it('derives draft ownership from the session and protects writes and revisions', async () => {
     const sql = await readFile(
-      new URL('../../../../adapters/drafts/migrations/0001_draft_validation.sql', import.meta.url),
+      new URL('../../migrations/0002_lesson_drafts.sql', import.meta.url),
       'utf8',
     );
     for (const statement of sql.split(';').filter((part) => part.trim()))
@@ -105,11 +157,33 @@ describe('passwordless authentication with local D1', () => {
       .join('; ');
     const user = await db.prepare('SELECT id FROM user').first<{ id: string }>();
     await db
-      .prepare('INSERT INTO drafts VALUES (?, ?, ?, 1)')
+      .prepare("INSERT INTO drafts VALUES (?, ?, 'validation', 1, ?, 1)")
       .bind('mine', user!.id, 'original')
       .run();
-    await db.prepare("INSERT INTO drafts VALUES ('theirs', 'someone-else', 'private', 1)").run();
+    await db
+      .prepare(
+        "INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('someone-else', 'Other', 'other@example.test', 1, 0, 0)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO drafts VALUES ('theirs', 'someone-else', 'validation', 1, 'private', 1)",
+      )
+      .run();
     const app = createApp({ auth, drafts: new D1DraftRepository(db as unknown as DraftDatabase) });
+    const open = (lessonId: string, lessonVersion: number) =>
+      app.request(origin + '/api/v1/drafts/open', {
+        method: 'POST',
+        headers: { cookie, Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId, lessonVersion }),
+      });
+    const opened = await open('values-and-expressions', 1);
+    expect(opened.status).toBe(200);
+    expect((await (await open('values-and-expressions', 1)).json()).data.id).toBe(
+      (await opened.json()).data.id,
+    );
+    expect((await open('missing', 1)).status).toBe(404);
+    expect((await open('values-and-expressions', 999)).status).toBe(409);
     expect((await app.request(origin + '/api/v1/drafts/mine')).status).toBe(401);
     expect(
       (await app.request(origin + '/api/v1/drafts/theirs', { headers: { cookie } })).status,

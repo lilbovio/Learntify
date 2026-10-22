@@ -1,5 +1,21 @@
 import { z } from 'zod';
 
+export const signInRequestSchema = z
+  .object({
+    email: z.string().email().max(254),
+    metadata: z.object({ adultConfirmed: z.literal(true) }).strict(),
+    callbackURL: z.enum(['/', '/?lang=en', '/?lang=es']).optional(),
+  })
+  .strict();
+export const accountResponseSchema = z.object({
+  data: z.object({ id: z.string(), name: z.string() }),
+  meta: z.object({ requestId: z.string() }),
+});
+export const capabilitiesResponseSchema = z.object({
+  data: z.object({ accounts: z.boolean(), cloudDrafts: z.boolean() }),
+  meta: z.object({ requestId: z.string() }),
+});
+
 export const saveDraftSchema = z
   .object({
     content: z.string().max(16000),
@@ -13,6 +29,18 @@ export const saveDraftSchema = z
   .strict();
 
 export const localeSchema = z.enum(['en', 'es']);
+export const openDraftSchema = z
+  .object({ lessonId: z.string().min(1).max(100), lessonVersion: z.number().int().positive() })
+  .strict();
+export const draftResponseSchema = z.object({
+  data: z.object({ id: z.string(), content: z.string(), revision: z.number().int().positive() }),
+  meta: z.object({ requestId: z.string() }),
+});
+export type LessonDraft = z.infer<typeof draftResponseSchema>['data'];
+export const savedDraftResponseSchema = z.object({
+  data: z.object({ revision: z.number().int().positive() }),
+  meta: z.object({ requestId: z.string() }),
+});
 export type Locale = z.infer<typeof localeSchema>;
 
 export const lessonSchema = z.object({

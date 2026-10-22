@@ -13,6 +13,7 @@ export type SaveResult =
   | { kind: 'operation-conflict' };
 
 export interface DraftRepository {
+  open(ownerId: string, lessonId: string, lessonVersion: number): Promise<Draft>;
   get(id: string, ownerId: string): Promise<Draft | undefined>;
   save(input: SaveDraft): Promise<SaveResult>;
 }

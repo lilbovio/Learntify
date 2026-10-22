@@ -6,6 +6,7 @@ export interface AuthConfiguration {
   database: D1Database;
   secret: string;
   origin: string;
+  allowSignUp?: boolean;
   /** The delivery adapter must enforce the global mail budget before sending. */
   sendSignInLink: (message: { email: string; url: string }) => Promise<void>;
 }
@@ -35,10 +36,14 @@ export function createAuth(configuration: AuthConfiguration) {
     logger: { disabled: true },
     plugins: [
       magicLink({
+        disableSignUp: configuration.allowSignUp !== true,
         expiresIn: 60 * 10,
         storeToken: 'hashed',
         rateLimit: { window: 60, max: 3 },
-        sendMagicLink: ({ email, url }) => configuration.sendSignInLink({ email, url }),
+        sendMagicLink: ({ email, url, metadata }) => {
+          if (metadata?.adultConfirmed !== true) throw new Error('Adult confirmation is required.');
+          return configuration.sendSignInLink({ email, url });
+        },
       }),
     ],
   });
