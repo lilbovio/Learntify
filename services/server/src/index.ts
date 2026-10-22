@@ -8,13 +8,20 @@ import {
   predictionResponseSchema,
 } from '@learntify/api-contracts';
 import { checkPrediction, getLesson, listLessons } from '@learntify/curriculum';
-import type { DraftRepository } from '@learntify/learning';
+import type { DraftRepository, PreferencesRepository } from '@learntify/learning';
 import type { LearntifyAuth } from './auth/create-auth';
 import { createAccountRoutes } from './auth/routes';
 import { createDraftRoutes } from './learning/draft-routes';
+import { createPreferencesRoutes } from './learning/preferences-routes';
 
 type Variables = { requestId: string };
-export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRepository } = {}) {
+export function createApp(
+  dependencies: {
+    auth?: LearntifyAuth;
+    drafts?: DraftRepository;
+    preferences?: PreferencesRepository;
+  } = {},
+) {
   const app = new Hono<{ Variables: Variables }>();
 
   app.use('*', async (c, next) => {
@@ -49,6 +56,7 @@ export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRe
         lessons: true,
         predictionPractice: true,
         accounts: Boolean(dependencies.auth),
+        preferences: Boolean(dependencies.auth && dependencies.preferences),
         cloudDrafts: Boolean(dependencies.auth && dependencies.drafts),
         codeExecution: false,
         community: false,
@@ -160,6 +168,8 @@ export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRe
 
   if (dependencies.auth) {
     app.route('/', createAccountRoutes(dependencies.auth));
+    if (dependencies.preferences)
+      app.route('/', createPreferencesRoutes(dependencies.auth, dependencies.preferences));
     if (dependencies.drafts)
       app.route('/', createDraftRoutes(dependencies.auth, dependencies.drafts));
   }

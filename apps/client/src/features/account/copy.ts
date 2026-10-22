@@ -2,6 +2,12 @@ import type { Locale } from '@learntify/api-contracts';
 export const accountCopy = {
   en: {
     title: 'Your Learntify account',
+    signIn: 'Sign in',
+    loading: 'Checking your account…',
+    unavailable: 'Account access is not enabled in this preview. You can still learn for free.',
+    continue: 'Continue learning',
+    checkEmail: 'Check your email',
+    differentEmail: 'Use another email or request a new link',
     description: 'Sign in with an email link. Lessons are free to explore without an account.',
     email: 'Email address',
     adult: 'I confirm I am 18 or older.',
@@ -17,6 +23,13 @@ export const accountCopy = {
   },
   es: {
     title: 'Tu cuenta de Learntify',
+    signIn: 'Iniciar sesión',
+    loading: 'Consultando tu cuenta…',
+    unavailable:
+      'Las cuentas no están habilitadas en esta vista previa. Puedes seguir aprendiendo gratis.',
+    continue: 'Continuar aprendiendo',
+    checkEmail: 'Revisa tu correo',
+    differentEmail: 'Usar otro correo o solicitar un enlace nuevo',
     description:
       'Inicia sesión con un enlace por correo. Puedes explorar las lecciones gratis sin cuenta.',
     email: 'Correo electrónico',

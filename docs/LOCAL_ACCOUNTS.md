@@ -13,13 +13,15 @@ pnpm dev:accounts:server
 pnpm dev:accounts:client
 ```
 
-Open http://127.0.0.1:5174. Enter a test email and confirm that you are 18 or older. This is self-attestation, not age verification. Request a link, then retrieve it explicitly:
+Open http://127.0.0.1:5174 and select **Sign in**. Enter a test email and confirm that you are 18 or older. This is self-attestation, not age verification. Request a link, then retrieve it explicitly:
 
 ```sh
 node tooling/local/mailbox.mjs learner@example.test
 ```
 
 Open the printed link in the same local browser. Links expire after ten minutes and can be used once. Sign-out revokes the session; lesson access remains public. The interface does not claim that progress is saved to the account yet.
+
+New accounts continue to onboarding; returning accounts continue to Today. Choose a learning direction and optional weekly study time, or skip. Account preferences persist in D1; guest preferences stay in browser storage and are not automatically imported on sign-in. Preferences use last-write-wins saves, unlike revision-protected lesson notes. Today links to the two available lessons and lets you edit preferences.
 
 Signed-in learners can write lesson notes. Notes save after 1.2 seconds of idle typing and are isolated by account and lesson version. Open another authenticated browser context to recover the saved notes. Conflicting edits show the other device's version and require an explicit choice. Network failures retain edits in the current tab with a retry button; they do not persist an offline copy on disk. Avoid closing the tab before saving. Saved notes are separate from assessed learning progress.
 

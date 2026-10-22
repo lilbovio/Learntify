@@ -22,6 +22,14 @@ CI covers formatting, type checks, module rules and their rejection tests, API/d
 - Restored architecture checks by pinning a compiler version with the required JavaScript API.
 - Added regressions for multi-lesson navigation, stale feedback, payload limits, and localization.
 
+## Screen coverage
+
+The complete product screen map is **not finished**. The implemented local flow is welcome → email sign-in/check-email → onboarding → Today → lesson. Guests can use onboarding, Today and lessons without signing in. Both locales support direct URLs and page reloads; unknown routes provide localized recovery. New accounts land in onboarding and returning accounts land in Today. Expired or reused links return to sign-in with a recoverable error.
+
+Learning preferences have validated GET/PUT contracts, a provider-independent repository interface, and a separate D1 adapter/migration. The server derives ownership from the session and rejects foreign-origin writes. Guest preferences use browser storage. Save failures preserve form input; member failures never silently save private preferences as guest data. Preferences use last-write-wins updates and are distinct from progress or mastery. Deleting an auth user cascades to preferences; the user-facing deletion workflow is still pending.
+
+Remaining screens include account settings/deletion, Google/GitHub sign-in, runnable coding exercises, assessed attempts/results, progress, review queue, projects, community/moderation and interview preparation. Community posting/chat remains gated on moderators. There are no fabricated progress statistics or links to unfinished modules in the current Today screen.
+
 ## Next implementation boundary
 
 Better Auth 1.7.12 has local D1-backed integration tests for hashed one-time links, expiration, session lookup and sign-out revocation. HTTP boundaries reject foreign origins and require adult self-confirmation for email link requests. Signup defaults to closed. Account and draft routes derive ownership from the session, validate published lesson/version pairs, and preserve revision/retry semantics. Production still instantiates the application without these dependencies, so account and cloud-draft capabilities remain false. OAuth is not implemented yet.

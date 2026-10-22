@@ -5,6 +5,9 @@ import {
   signInRequestSchema,
   draftResponseSchema,
   savedDraftResponseSchema,
+  preferencesResponseSchema,
+  preferencesSchema,
+  type LearningPreferences,
   lessonListResponseSchema,
   lessonResponseSchema,
   predictionResponseSchema,
@@ -32,6 +35,22 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async getPreferences(signal?: AbortSignal) {
+      return preferencesResponseSchema.parse(
+        await read(await fetcher('/api/v1/preferences', signal ? { signal } : {})),
+      ).data;
+    },
+    async savePreferences(input: LearningPreferences) {
+      return preferencesResponseSchema.parse(
+        await read(
+          await fetcher('/api/v1/preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(preferencesSchema.parse(input)),
+          }),
+        ),
+      ).data;
+    },
     async openDraft(lessonId: string, lessonVersion: number) {
       return draftResponseSchema.parse(
         await read(
@@ -78,11 +97,17 @@ export function createApiClient(fetcher: typeof fetch = fetch) {
       if (response.status === 401) return null;
       return accountResponseSchema.parse(await read(response)).data;
     },
-    async requestSignIn(email: string, adultConfirmed: boolean, locale: Locale) {
+    async requestSignIn(email: string, adultConfirmed: boolean, locale: Locale, dedicated = false) {
       const body = signInRequestSchema.parse({
         email,
         metadata: { adultConfirmed },
-        callbackURL: '/?lang=' + locale,
+        callbackURL: dedicated ? '/' + locale + '/today' : '/?lang=' + locale,
+        ...(dedicated
+          ? {
+              newUserCallbackURL: '/' + locale + '/start',
+              errorCallbackURL: '/' + locale + '/auth',
+            }
+          : {}),
       });
       await read(
         await fetcher('/api/auth/sign-in/magic-link', {

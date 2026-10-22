@@ -17,6 +17,7 @@
     "@learntify/curriculum": "workspace:*",
     "@learntify/learning": "workspace:*",
     "@learntify/draft-storage": "workspace:*",
+    "@learntify/preferences-storage": "workspace:*",
     "better-auth": "1.7.12",
     "hono": "4.13.13"
   },

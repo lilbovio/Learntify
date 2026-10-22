@@ -7,6 +7,8 @@ A free, bilingual JavaScript learning platform focused on understanding, practic
 This is an early local development increment, not a production-ready learning platform.
 
 - Separate React/Vite client and Hono Cloudflare Worker API.
+- Connected English/Spanish welcome, email sign-in/check-email, onboarding, Today and lesson screens, with localized missing-page recovery.
+- Learning goal and optional weekly time saved in the guest browser or authenticated D1 profile.
 - Two English/Spanish lessons with a localized learning path and prediction feedback.
 - Per-lesson/version answer persistence on the current device; honest storage/failure messages.
 - Strict shared API schemas and a small typed HTTP client.
@@ -55,7 +57,8 @@ The GitHub Actions workflow runs those same checks for pushes and pull requests 
 - `apps/client`: presentation, local interaction state, and shared interface translations.
 - `services/server`: HTTP composition, validation, and Worker entry point.
 - `modules/curriculum`: curriculum lookup and feedback rules without framework dependencies.
-- `modules/learning`: draft repository contract.
+- `modules/learning`: draft and learning-preference repository contracts.
+- `adapters/preferences`: account-owned D1 learning preferences.
 - `adapters/drafts`: D1 lesson-note persistence and concurrency tests; versioned schema lives in `services/server/migrations`.
 - `adapters/email`: Resend transport and D1 mail-budget reservations.
 - `packages/api-contracts`: runtime schemas and public DTO types.

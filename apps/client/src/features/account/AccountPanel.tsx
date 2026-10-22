@@ -8,10 +8,12 @@ export function AccountPanel({
   locale,
   onAccountChange,
   unsavedNotes,
+  standalone = false,
 }: {
   locale: Locale;
   onAccountChange: (id: string | null) => void;
   unsavedNotes: boolean;
+  standalone?: boolean;
 }) {
   const text = accountCopy[locale];
   const [state, setState] = useState<'loading' | 'disabled' | 'guest' | 'member' | 'failed'>(
@@ -58,7 +60,14 @@ export function AccountPanel({
     })();
     return () => controller.abort();
   }, [refresh, onAccountChange]);
-  if (state === 'loading' || state === 'disabled') return null;
+  if (state === 'loading') return standalone ? <p role="status">{text.loading}</p> : null;
+  if (state === 'disabled') return standalone ? <p role="status">{text.unavailable}</p> : null;
+  if (state === 'guest' && !standalone)
+    return (
+      <p className="account-entry">
+        <a href={'/' + locale + '/auth'}>{text.signIn}</a>
+      </p>
+    );
   return (
     <section className="account-panel" aria-labelledby="account-title">
       <h2 id="account-title">{text.title}</h2>
@@ -70,6 +79,11 @@ export function AccountPanel({
       ) : state === 'member' ? (
         <div>
           <p role="status">{text.signedIn}</p>
+          {standalone && (
+            <p>
+              <a href={'/' + locale + '/today'}>{text.continue}</a>
+            </p>
+          )}
           <button
             disabled={busy}
             onClick={async () => {
@@ -102,7 +116,7 @@ export function AccountPanel({
             setFailed(false);
             setSent(false);
             try {
-              await api.requestSignIn(email, adultConfirmed, locale);
+              await api.requestSignIn(email, adultConfirmed, locale, standalone);
               setSent(true);
               setInvalidLink(false);
             } catch {
@@ -112,35 +126,46 @@ export function AccountPanel({
             }
           }}
         >
-          <p>{text.description}</p>
-          <label htmlFor="account-email">{text.email}</label>
-          <input
-            id="account-email"
-            type="email"
-            autoComplete="email"
-            required
-            maxLength={254}
-            value={email}
-            disabled={busy}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              setSent(false);
-            }}
-          />
-          <label className="adult-confirmation">
-            <input
-              type="checkbox"
-              required
-              checked={adultConfirmed}
-              disabled={busy}
-              onChange={(event) => setAdultConfirmed(event.target.checked)}
-            />
-            {text.adult}
-          </label>
-          <button disabled={busy || !adultConfirmed || sent} type="submit">
-            {busy ? text.sending : text.send}
-          </button>
-          {sent && <p role="status">{text.sent}</p>}
+          {sent ? (
+            <>
+              <h3>{text.checkEmail}</h3>
+              <p role="status">{text.sent}</p>
+              <button type="button" onClick={() => setSent(false)}>
+                {text.differentEmail}
+              </button>
+            </>
+          ) : (
+            <>
+              <p>{text.description}</p>
+              <label htmlFor="account-email">{text.email}</label>
+              <input
+                id="account-email"
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                value={email}
+                disabled={busy}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setSent(false);
+                }}
+              />
+              <label className="adult-confirmation">
+                <input
+                  type="checkbox"
+                  required
+                  checked={adultConfirmed}
+                  disabled={busy}
+                  onChange={(event) => setAdultConfirmed(event.target.checked)}
+                />
+                {text.adult}
+              </label>
+              <button disabled={busy || !adultConfirmed || sent} type="submit">
+                {busy ? text.sending : text.send}
+              </button>
+            </>
+          )}
           {invalidLink && <p role="alert">{text.invalidLink}</p>}
         </form>
       )}

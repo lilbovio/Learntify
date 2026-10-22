@@ -7,6 +7,7 @@ import { createAccountRoutes } from './routes';
 import { readFile } from 'node:fs/promises';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { createApp } from '../index';
+import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
 describe('passwordless authentication with local D1', () => {
   let runtime: Miniflare;
@@ -85,13 +86,17 @@ describe('passwordless authentication with local D1', () => {
       (await db.prepare('SELECT COUNT(*) AS count FROM user').first<{ count: number }>())?.count,
     ).toBe(0);
   });
-  const requestLink = (auth: LearntifyAuth, requestOrigin = origin) =>
+  const requestLink = (
+    auth: LearntifyAuth,
+    requestOrigin = origin,
+    email = 'learner@example.com',
+  ) =>
     createAccountRoutes(auth).request(
       new Request(origin + '/api/auth/sign-in/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: requestOrigin },
         body: JSON.stringify({
-          email: 'learner@example.com',
+          email,
           callbackURL: '/',
           metadata: { adultConfirmed: true },
         }),
@@ -141,6 +146,51 @@ describe('passwordless authentication with local D1', () => {
     expect(
       (await db.prepare('SELECT COUNT(*) AS count FROM session').first<{ count: number }>())?.count,
     ).toBe(0);
+  });
+  it('persists validated preferences only for the authenticated owner', async () => {
+    const sql = await readFile(
+      new URL('../../migrations/0003_learning_preferences.sql', import.meta.url),
+      'utf8',
+    );
+    for (const statement of sql.split(';').filter((part) => part.trim()))
+      await db.prepare(statement).run();
+    const app = createApp({
+      auth,
+      preferences: new D1PreferencesRepository(db as unknown as PreferencesDatabase),
+    });
+    const url = origin + '/api/v1/preferences';
+    expect((await app.request(url)).status).toBe(401);
+    const signIn = async (email: string) => {
+      await requestLink(auth, origin, email);
+      const response = await auth.handler(new Request(deliveries.at(-1)!.url));
+      return response.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+    };
+    const cookie = await signIn('first@example.test');
+    const input = { locale: 'es', goal: 'projects', weeklyMinutes: 180 };
+    const save = (body: unknown, requestOrigin = origin) =>
+      app.request(url, {
+        method: 'PUT',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    expect((await save(input, 'https://attacker.test')).status).toBe(403);
+    expect((await save({ ...input, ownerId: 'other' })).status).toBe(422);
+    expect((await save({ ...input, weeklyMinutes: 999 })).status).toBe(422);
+    expect((await save(input)).status).toBe(200);
+    const otherCookie = await signIn('second@example.test');
+    expect(
+      await (await app.request(url, { headers: { cookie: otherCookie } })).json(),
+    ).toMatchObject({ data: null });
+    const read = await app.request(url, { headers: { cookie } });
+    expect(await read.json()).toMatchObject({ data: input });
+    expect(read.headers.get('Cache-Control')).toBe('no-store');
+    await db.prepare('DELETE FROM user WHERE email = ?').bind('first@example.test').run();
+    expect(await db.prepare('SELECT * FROM learning_preferences').all()).toMatchObject({
+      results: [],
+    });
   });
   it('derives draft ownership from the session and protects writes and revisions', async () => {
     const sql = await readFile(

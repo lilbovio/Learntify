@@ -50,6 +50,12 @@ importers:
 
   adapters/email: {}
 
+  adapters/preferences:
+    dependencies:
+      '@learntify/learning':
+        specifier: workspace:*
+        version: link:../../modules/learning
+
   apps/client:
     dependencies:
       '@learntify/api-client':
@@ -95,6 +101,9 @@ importers:
       '@learntify/learning':
         specifier: workspace:*
         version: link:../../modules/learning
+      '@learntify/preferences-storage':
+        specifier: workspace:*
+        version: link:../../adapters/preferences
       better-auth:
         specifier: 1.7.12
         version: 1.7.12(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.0.5(@types/node@24.19.2)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)))

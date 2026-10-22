@@ -2,6 +2,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { createAuth } from './auth/create-auth';
 import { createApp } from './index';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
+import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
 interface LocalBindings {
   DB: D1Database;
@@ -35,6 +36,7 @@ export default {
     });
     return createApp({
       auth,
+      preferences: new D1PreferencesRepository(env.DB as unknown as PreferencesDatabase),
       drafts: new D1DraftRepository(env.DB as unknown as DraftDatabase),
     }).fetch(request);
   },
