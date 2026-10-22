@@ -1,4 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
+import { parsePreviewEmails } from './auth/preview-admission';
 
 export interface ProductionBindings {
   ACCOUNT_MODE?: string;
@@ -6,6 +7,7 @@ export interface ProductionBindings {
   AUTH_SECRET?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  PREVIEW_EMAILS?: string;
   DB?: D1Database;
 }
 
@@ -19,6 +21,7 @@ export type AccountConfiguration =
       secret: string;
       apiKey: string;
       from: string;
+      previewEmails: ReadonlySet<string>;
     };
 
 /** Reports field names only. Never include values in diagnostics or HTTP responses. */
@@ -28,6 +31,8 @@ export function readAccountConfiguration(env: ProductionBindings): AccountConfig
   if (env.ACCOUNT_MODE !== 'existing-accounts')
     return { kind: 'invalid', fields: ['ACCOUNT_MODE'] };
   const fields: string[] = [];
+  const previewEmails = parsePreviewEmails(env.PREVIEW_EMAILS);
+  if (!previewEmails) fields.push('PREVIEW_EMAILS');
   try {
     const origin = new URL(env.APP_ORIGIN ?? '');
     if (
@@ -61,5 +66,6 @@ export function readAccountConfiguration(env: ProductionBindings): AccountConfig
     secret: env.AUTH_SECRET!,
     apiKey: env.RESEND_API_KEY!,
     from: env.EMAIL_FROM!,
+    previewEmails: previewEmails!,
   };
 }

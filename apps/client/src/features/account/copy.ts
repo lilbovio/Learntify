@@ -13,7 +13,7 @@ export const accountCopy = {
     adult: 'I confirm I am 18 or older.',
     send: 'Send sign-in link',
     sending: 'Requesting link…',
-    sent: 'Link requested. Open it from your email to continue. It expires in 10 minutes.',
+    sent: 'Link requested. If this address has access, a sign-in email will arrive shortly. Its link expires in 10 minutes.',
     signedIn: 'You’re signed in. Cloud progress is not available in this preview yet.',
     signOut: 'Sign out',
     leaveUnsaved: 'Some notes are not saved. Sign out anyway?',
@@ -36,7 +36,7 @@ export const accountCopy = {
     adult: 'Confirmo que tengo 18 años o más.',
     send: 'Enviar enlace de acceso',
     sending: 'Solicitando enlace…',
-    sent: 'Enlace solicitado. Ábrelo desde tu correo para continuar. Vence en 10 minutos.',
+    sent: 'Enlace solicitado. Si este correo tiene acceso, recibirás un mensaje en breve. Su enlace vence en 10 minutos.',
     signedIn:
       'Iniciaste sesión. El progreso en la nube aún no está disponible en esta vista previa.',
     signOut: 'Cerrar sesión',

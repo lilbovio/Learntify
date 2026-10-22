@@ -35,6 +35,7 @@ export default {
         ]);
       },
     });
+    await auth.$context;
     return createApp({
       auth,
       preferences: new D1PreferencesRepository(env.DB as unknown as PreferencesDatabase),

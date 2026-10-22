@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { magicLink } from 'better-auth/plugins';
 import type { D1Database } from '@cloudflare/workers-types';
+import type { AccountAdmission } from './preview-admission';
 
 export const sensitiveSessionAgeSeconds = 15 * 60;
 
@@ -10,6 +11,7 @@ export interface AuthConfiguration {
   origin: string;
   allowSignUp?: boolean;
   allowDeletion?: boolean;
+  admission?: AccountAdmission;
   /** The delivery adapter must enforce the global mail budget before sending. */
   sendSignInLink: (message: { email: string; url: string }) => Promise<void>;
 }
@@ -42,6 +44,20 @@ export function createAuth(configuration: AuthConfiguration) {
     rateLimit: { enabled: true, storage: 'database', window: 60, max: 30 },
     advanced: { useSecureCookies: origin.protocol === 'https:' },
     logger: { disabled: true },
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            if (!configuration.admission) return;
+            const user = await configuration.database
+              .prepare('SELECT email FROM user WHERE id = ?')
+              .bind(session.userId)
+              .first<{ email: string }>();
+            if (!user || !configuration.admission(user.email)) return false;
+          },
+        },
+      },
+    },
     plugins: [
       magicLink({
         disableSignUp: configuration.allowSignUp !== true,
@@ -50,6 +66,8 @@ export function createAuth(configuration: AuthConfiguration) {
         rateLimit: { window: 60, max: 3 },
         sendMagicLink: ({ email, url, metadata }) => {
           if (metadata?.adultConfirmed !== true) throw new Error('Adult confirmation is required.');
+          if (configuration.admission && !configuration.admission(email))
+            throw new Error('Sign-in unavailable.');
           return configuration.sendSignInLink({ email, url });
         },
       }),

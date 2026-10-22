@@ -30,6 +30,7 @@ it('validates exact HTTPS origins and complete preview bindings without accessin
     AUTH_SECRET: 'a'.repeat(40),
     RESEND_API_KEY: 're_' + 'b'.repeat(24),
     EMAIL_FROM: 'learn@learntify.test',
+    PREVIEW_EMAILS: 'learner@example.test',
     DB: {
       prepare() {
         throw Error('Database must not be accessed');

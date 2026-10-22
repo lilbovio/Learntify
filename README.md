@@ -8,6 +8,7 @@ This is an early local development increment, not a production-ready learning pl
 
 - Separate React/Vite client and Hono Cloudflare Worker API.
 - Production binding validation and adapter composition, with accounts disabled by default; see [setup readiness](docs/PRODUCTION_SETUP.md).
+- Exact-email preview admission, private-API access checks, and a reviewable SQL generator for initial preview accounts.
 - Connected English/Spanish welcome, email sign-in/check-email, onboarding, Today and lesson screens, with localized missing-page recovery.
 - Learning goal and optional weekly time saved in the guest browser or authenticated D1 profile.
 - Bilingual local account settings with recent-sign-in checks, explicit deletion confirmation, and cascading removal of owned notes/preferences.

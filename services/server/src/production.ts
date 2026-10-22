@@ -4,6 +4,7 @@ import { readAccountConfiguration, type ProductionBindings } from './configurati
 import { createResendDelivery } from '@learntify/email';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
+import { previewAdmission } from './auth/preview-admission';
 
 const publicApp = createApp();
 const unavailable = () =>
@@ -19,7 +20,9 @@ export default {
     if (configuration.kind === 'disabled') return publicApp.fetch(request);
     if (configuration.kind === 'invalid') return unavailable();
     if (new URL(request.url).origin !== configuration.origin) return unavailable();
+    const admission = previewAdmission(configuration.previewEmails);
     const auth = createAuth({
+      admission,
       database: configuration.database,
       origin: configuration.origin,
       secret: configuration.secret,
@@ -30,8 +33,14 @@ export default {
         from: configuration.from,
       }),
     });
+    try {
+      await auth.$context;
+    } catch {
+      return unavailable();
+    }
     return createApp({
       auth,
+      admission,
       drafts: new D1DraftRepository(configuration.database as unknown as DraftDatabase),
       preferences: new D1PreferencesRepository(
         configuration.database as unknown as PreferencesDatabase,

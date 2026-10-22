@@ -8,6 +8,8 @@ import { readFile } from 'node:fs/promises';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { createApp } from '../index';
 import production from '../production';
+import { previewAdmission } from './preview-admission';
+import { provisionPreviewSql } from '../../scripts/provision-preview';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
 describe('passwordless authentication with local D1', () => {
@@ -44,6 +46,7 @@ describe('passwordless authentication with local D1', () => {
         deliveries.push(message);
       },
     });
+    await auth.$context;
   });
   afterEach(async () => {
     await runtime?.dispose();
@@ -62,6 +65,7 @@ describe('passwordless authentication with local D1', () => {
       AUTH_SECRET: 'a'.repeat(40),
       RESEND_API_KEY: 're_' + 'b'.repeat(24),
       EMAIL_FROM: 'learn@learntify.test',
+      PREVIEW_EMAILS: 'learner@example.test',
       DB: db,
     };
     const response = await production.fetch(new Request(origin + '/api/v1/capabilities'), bindings);
@@ -78,6 +82,85 @@ describe('passwordless authentication with local D1', () => {
       bindings,
     );
     expect(deletion.status).toBe(404);
+  });
+  it('provisions unverified preview accounts idempotently and rejects unlisted requests before mail or tokens', async () => {
+    const sql = provisionPreviewSql('Learner@Example.test', "Learner's name");
+    await db.prepare(sql).run();
+    await db.prepare(sql).run();
+    expect((await db.prepare('SELECT name, email, emailVerified FROM user').all()).results).toEqual(
+      [{ name: "Learner's name", email: 'learner@example.test', emailVerified: 0 }],
+    );
+    expect(() => provisionPreviewSql('a@example.test,b@example.test', 'Name')).toThrow();
+    expect(() => provisionPreviewSql('learner@example.test', '\n')).toThrow();
+    const admission = previewAdmission(new Set(['learner@example.test']));
+    const closed = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      admission,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    const routes = createAccountRoutes(closed, admission);
+    const request = (email: string) =>
+      routes.request(origin + '/api/auth/sign-in/magic-link', {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, metadata: { adultConfirmed: true } }),
+      });
+    const blocked = await request('other@example.test');
+    expect(blocked.status).toBe(200);
+    expect(await blocked.json()).toEqual({ status: true });
+    expect(deliveries).toHaveLength(0);
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM verification').first<{ count: number }>())
+        ?.count,
+    ).toBe(0);
+    expect((await request('learner@example.test')).status).toBe(200);
+    const verified = await closed.handler(new Request(deliveries[0]!.url));
+    const cookie = verified.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    expect(cookie).toContain('session_token');
+    const allowedApp = createApp({ auth: closed, admission });
+    expect((await allowedApp.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(
+      200,
+    );
+    const removed = createApp({ auth: closed, admission: () => false });
+    for (const endpoint of [
+      '/api/v1/me',
+      '/api/v1/preferences',
+      '/api/v1/drafts/private',
+      '/api/v1/future-private',
+    ])
+      expect((await removed.request(origin + endpoint, { headers: { cookie } })).status).toBe(401);
+    expect((await removed.request(origin + '/api/v1/lessons')).status).toBe(200);
+    expect(
+      (await db.prepare('SELECT emailVerified FROM user').first<{ emailVerified: number }>())
+        ?.emailVerified,
+    ).toBe(1);
+  });
+  it('does not create a session from a pending link after preview admission is removed', async () => {
+    await db.prepare(provisionPreviewSql('learner@example.com', 'Learner')).run();
+    let allowed = true;
+    const closed = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      admission: () => allowed,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    await requestLink(closed);
+    allowed = false;
+    const verified = await closed.handler(new Request(deliveries[0]!.url));
+    expect(verified.headers.get('set-cookie') ?? '').not.toContain('session_token=');
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM session').first<{ count: number }>())?.count,
+    ).toBe(0);
   });
   it('requires explicit adult confirmation before issuing a link', async () => {
     const response = await createAccountRoutes(auth).request(

@@ -3,9 +3,10 @@ import { bodyLimit } from 'hono/body-limit';
 import { sensitiveSessionAgeSeconds, type LearntifyAuth } from './create-auth';
 import { errorBody, meta } from '../http/envelope';
 import { signInRequestSchema, deleteAccountSchema } from '@learntify/api-contracts';
+import type { AccountAdmission } from './preview-admission';
 
 /** Mount only after deployment configuration and signup safeguards are complete. */
-export function createAccountRoutes(auth: LearntifyAuth) {
+export function createAccountRoutes(auth: LearntifyAuth, admission?: AccountAdmission) {
   const routes = new Hono();
   routes.use('/api/auth/*', async (c, next) => {
     c.header('Cache-Control', 'no-store');
@@ -27,11 +28,14 @@ export function createAccountRoutes(auth: LearntifyAuth) {
     } catch {
       return c.json(errorBody(c, 'INVALID_JSON', 'Expected JSON.'), 400);
     }
-    if (!signInRequestSchema.safeParse(input).success)
+    const parsed = signInRequestSchema.safeParse(input);
+    if (!parsed.success)
       return c.json(
         errorBody(c, 'INVALID_INPUT', 'Enter a valid email and confirm you are 18 or older.'),
         422,
       );
+    // Match the provider's acknowledgement without creating tokens or consuming mail budget.
+    if (admission && !admission(parsed.data.email)) return c.json({ status: true });
     return auth.handler(c.req.raw);
   });
   // Expose only the account operations implemented by the client.

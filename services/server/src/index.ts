@@ -13,6 +13,7 @@ import type { LearntifyAuth } from './auth/create-auth';
 import { createAccountRoutes } from './auth/routes';
 import { createDraftRoutes } from './learning/draft-routes';
 import { createPreferencesRoutes } from './learning/preferences-routes';
+import type { AccountAdmission } from './auth/preview-admission';
 
 type Variables = { requestId: string };
 export function createApp(
@@ -20,6 +21,7 @@ export function createApp(
     auth?: LearntifyAuth;
     drafts?: DraftRepository;
     preferences?: PreferencesRepository;
+    admission?: AccountAdmission;
   } = {},
 ) {
   const app = new Hono<{ Variables: Variables }>();
@@ -31,6 +33,31 @@ export function createApp(
     await next();
     c.header('X-Request-Id', c.get('requestId'));
   });
+
+  if (dependencies.auth && dependencies.admission) {
+    const { auth, admission } = dependencies;
+    app.use('/api/v1/*', async (c, next) => {
+      const path = c.req.path;
+      const publicRead =
+        c.req.method === 'GET' &&
+        (['/api/v1/health', '/api/v1/capabilities', '/api/v1/lessons'].includes(path) ||
+          /^\/api\/v1\/lessons\/[^/]+$/.test(path));
+      const publicPrediction =
+        c.req.method === 'POST' && /^\/api\/v1\/lessons\/[^/]+\/predictions$/.test(path);
+      if (!publicRead && !publicPrediction) {
+        const session = await auth.api.getSession({ headers: c.req.raw.headers });
+        if (!session || !admission(session.user.email))
+          return c.json(
+            {
+              error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
+              meta: { requestId: c.get('requestId') },
+            },
+            401,
+          );
+      }
+      await next();
+    });
+  }
 
   app.use(
     '/api/v1/lessons/:id/predictions',
@@ -168,7 +195,7 @@ export function createApp(
   });
 
   if (dependencies.auth) {
-    app.route('/', createAccountRoutes(dependencies.auth));
+    app.route('/', createAccountRoutes(dependencies.auth, dependencies.admission));
     if (dependencies.preferences)
       app.route('/', createPreferencesRoutes(dependencies.auth, dependencies.preferences));
     if (dependencies.drafts)
