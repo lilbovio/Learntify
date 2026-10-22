@@ -25,6 +25,7 @@ export default {
       origin: env.APP_ORIGIN,
       secret: 'local-development-only-never-use-this-secret-in-production',
       allowSignUp: true,
+      allowDeletion: true,
       sendSignInLink: async ({ email, url }) => {
         await env.DB.batch([
           env.DB.prepare('DELETE FROM dev_mailbox WHERE created_at < ?').bind(Date.now() - 600000),

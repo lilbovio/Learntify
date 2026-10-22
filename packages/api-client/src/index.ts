@@ -1,5 +1,7 @@
 import {
   apiErrorSchema,
+  deleteAccountSchema,
+  deleteAccountResponseSchema,
   accountResponseSchema,
   capabilitiesResponseSchema,
   signInRequestSchema,
@@ -35,6 +37,18 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async deleteAccount(confirmation: string) {
+      return deleteAccountResponseSchema.parse(
+        await read(
+          await fetcher('/api/auth/delete-user', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(deleteAccountSchema.parse({ confirmation })),
+          }),
+        ),
+      );
+    },
     async getPreferences(signal?: AbortSignal) {
       return preferencesResponseSchema.parse(
         await read(await fetcher('/api/v1/preferences', signal ? { signal } : {})),

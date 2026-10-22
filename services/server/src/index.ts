@@ -56,6 +56,7 @@ export function createApp(
         lessons: true,
         predictionPractice: true,
         accounts: Boolean(dependencies.auth),
+        accountDeletion: dependencies.auth?.options.user?.deleteUser?.enabled === true,
         preferences: Boolean(dependencies.auth && dependencies.preferences),
         cloudDrafts: Boolean(dependencies.auth && dependencies.drafts),
         codeExecution: false,

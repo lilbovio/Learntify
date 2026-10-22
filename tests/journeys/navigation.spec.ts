@@ -41,4 +41,11 @@ test('Spanish mobile navigation and missing routes have usable destinations', as
   await expect(page.getByRole('heading', { name: 'Esta página no existe.' })).toBeVisible();
   await page.getByRole('link', { name: 'Volver a Learntify' }).click();
   await expect(page).toHaveURL(/\/es$/);
+  await page.goto('/es/settings');
+  await expect(
+    page.getByText('Las cuentas no están habilitadas en esta vista previa.'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Eliminar mi cuenta permanentemente' }),
+  ).toHaveCount(0);
 });

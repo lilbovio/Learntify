@@ -4,11 +4,14 @@ import { WelcomePage } from '../features/home/WelcomePage';
 import { TodayPage } from '../features/home/TodayPage';
 import { OnboardingPage } from '../features/onboarding/OnboardingPage';
 import { AuthPage } from '../features/account/AuthPage';
+import { SettingsPage } from '../features/account/SettingsPage';
 import { PageFrame } from '../shared/PageFrame';
 
 export function App() {
   const route = readRoute(window.location.pathname, window.location.search);
   switch (route.screen) {
+    case 'settings':
+      return <SettingsPage locale={route.locale} />;
     case 'lesson':
       return <LessonPage />;
     case 'welcome':

@@ -27,6 +27,8 @@ Signed-in learners can write lesson notes. Notes save after 1.2 seconds of idle 
 
 ## Isolation
 
+From a signed-in page, open **Account settings** to edit learning preferences, sign out, or delete the development account. Deletion requires typing `DELETE` and a session created within 15 minutes; otherwise sign out, sign in again and return to settings. Deletion removes the auth user, all its sessions, lesson notes, retry records and preferences from active local D1. The development mailbox, verification expiry records and guest browser choices are separate. Production backup expiry and deletion replay still need implementation before launch. The implementation uses [Better Auth's deletion and fresh-session checks](https://better-auth.com/docs/concepts/users-accounts), with a stricter request boundary.
+
 The local profile uses `services/server/src/local.ts`, loopback ports 8788/5174, a deliberately development-only secret and a placeholder D1 ID. It rejects requests with non-loopback hostnames and incompatible bindings. Do not deploy this profile or reuse its secret. The production entry point does not import the local entry point or mailbox.
 
 The mailbox stores the latest link per test address in ignored `.wrangler` local state. Expired entries are removed on the next mail request; stopping the server is not deletion. Do not use personal addresses or copy mailbox data into bug reports. The mailbox has no HTTP retrieval endpoint and sends no external email. CLI output is an explicit local developer action; the application does not log login links.

@@ -257,4 +257,95 @@ describe('passwordless authentication with local D1', () => {
     expect(await read.json()).toMatchObject({ data: { content: 'updated', revision: 2 } });
     expect(read.headers.get('Cache-Control')).toBe('no-store');
   });
+  it('requires confirmation and fresh authentication, then deletes only the current account and its owned data', async () => {
+    for (const file of ['0002_lesson_drafts.sql', '0003_learning_preferences.sql']) {
+      const sql = await readFile(new URL('../../migrations/' + file, import.meta.url), 'utf8');
+      for (const statement of sql.split(';').filter((part) => part.trim()))
+        await db.prepare(statement).run();
+    }
+    expect(
+      (
+        await createAccountRoutes(auth).request(origin + '/api/auth/delete-user', {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirmation: 'DELETE' }),
+        })
+      ).status,
+    ).toBe(404);
+    auth = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      allowSignUp: true,
+      allowDeletion: true,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    const routes = createAccountRoutes(auth);
+    const remove = (
+      cookie = '',
+      input: unknown = { confirmation: 'DELETE' },
+      requestOrigin = origin,
+    ) =>
+      routes.request(origin + '/api/auth/delete-user', {
+        method: 'POST',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+    expect((await remove()).status).toBe(401);
+    await requestLink(auth);
+    const verified = await auth.handler(new Request(deliveries[0]!.url));
+    const cookie = verified.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const user = await db.prepare('SELECT id FROM user').first<{ id: string }>();
+    const drafts = new D1DraftRepository(db as unknown as DraftDatabase);
+    const draft = await drafts.open(user!.id, 'values-and-expressions', 1);
+    await drafts.save({
+      id: draft.id,
+      ownerId: user!.id,
+      expectedRevision: 1,
+      content: 'Private notes',
+      operationId: crypto.randomUUID(),
+    });
+    await new D1PreferencesRepository(db as unknown as PreferencesDatabase).save(user!.id, {
+      locale: 'en',
+      goal: 'foundations',
+      weeklyMinutes: null,
+    });
+    await db
+      .prepare(
+        "INSERT INTO user (id,name,email,emailVerified,createdAt,updatedAt) VALUES ('other','Other','other@example.test',1,0,0)",
+      )
+      .run();
+    expect((await remove(cookie, { confirmation: 'DELETE' }, 'https://attacker.test')).status).toBe(
+      403,
+    );
+    expect((await remove(cookie, { confirmation: 'DELETE', userId: 'other' })).status).toBe(422);
+    expect((await remove(cookie, {})).status).toBe(422);
+    await db
+      .prepare('UPDATE session SET createdAt = ? WHERE userId = ?')
+      .bind(Date.now() - 16 * 60 * 1000, user!.id)
+      .run();
+    expect((await remove(cookie)).status).toBe(409);
+    expect(await drafts.get(draft.id, user!.id)).toBeDefined();
+    await db
+      .prepare('UPDATE session SET createdAt = ? WHERE userId = ?')
+      .bind(Date.now(), user!.id)
+      .run();
+    const deleted = await remove(cookie);
+    expect(deleted.status).toBe(200);
+    expect(await deleted.json()).toMatchObject({ success: true, message: 'User deleted' });
+    expect((await routes.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(401);
+    expect(await drafts.get(draft.id, user!.id)).toBeUndefined();
+    for (const table of ['session', 'draft_operations', 'learning_preferences']) {
+      expect(
+        (await db.prepare('SELECT COUNT(*) AS count FROM ' + table).first<{ count: number }>())
+          ?.count,
+      ).toBe(0);
+    }
+    expect((await db.prepare('SELECT id FROM user').all()).results).toEqual([{ id: 'other' }]);
+  });
 });

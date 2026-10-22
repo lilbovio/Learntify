@@ -2,11 +2,14 @@ import { betterAuth } from 'better-auth';
 import { magicLink } from 'better-auth/plugins';
 import type { D1Database } from '@cloudflare/workers-types';
 
+export const sensitiveSessionAgeSeconds = 15 * 60;
+
 export interface AuthConfiguration {
   database: D1Database;
   secret: string;
   origin: string;
   allowSignUp?: boolean;
+  allowDeletion?: boolean;
   /** The delivery adapter must enforce the global mail budget before sending. */
   sendSignInLink: (message: { email: string; url: string }) => Promise<void>;
 }
@@ -30,7 +33,12 @@ export function createAuth(configuration: AuthConfiguration) {
     trustedOrigins: [configuration.origin],
     emailAndPassword: { enabled: false },
     account: { accountLinking: { enabled: false } },
-    session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+    session: {
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 24,
+      freshAge: sensitiveSessionAgeSeconds,
+    },
+    user: { deleteUser: { enabled: configuration.allowDeletion === true } },
     rateLimit: { enabled: true, storage: 'database', window: 60, max: 30 },
     advanced: { useSecureCookies: origin.protocol === 'https:' },
     logger: { disabled: true },

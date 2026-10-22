@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import type { LearntifyAuth } from './create-auth';
+import { sensitiveSessionAgeSeconds, type LearntifyAuth } from './create-auth';
 import { errorBody, meta } from '../http/envelope';
-import { signInRequestSchema } from '@learntify/api-contracts';
+import { signInRequestSchema, deleteAccountSchema } from '@learntify/api-contracts';
 
 /** Mount only after deployment configuration and signup safeguards are complete. */
 export function createAccountRoutes(auth: LearntifyAuth) {
@@ -36,6 +36,32 @@ export function createAccountRoutes(auth: LearntifyAuth) {
   });
   // Expose only the account operations implemented by the client.
   routes.post('/api/auth/sign-out', (c) => auth.handler(c.req.raw));
+  routes.post('/api/auth/delete-user', async (c) => {
+    if (!auth.options.user?.deleteUser?.enabled)
+      return c.json(errorBody(c, 'NOT_FOUND', 'Account deletion is unavailable.'), 404);
+    let input: unknown;
+    try {
+      input = await c.req.json();
+    } catch {
+      return c.json(errorBody(c, 'INVALID_JSON', 'Expected JSON.'), 400);
+    }
+    if (!deleteAccountSchema.safeParse(input).success)
+      return c.json(errorBody(c, 'INVALID_INPUT', 'Confirm account deletion.'), 422);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json(errorBody(c, 'UNAUTHENTICATED', 'Sign in to continue.'), 401);
+    if (
+      Date.now() - new Date(session.session.createdAt).getTime() >=
+      sensitiveSessionAgeSeconds * 1000
+    )
+      return c.json(
+        errorBody(c, 'REAUTHENTICATION_REQUIRED', 'Sign in again before deleting your account.'),
+        409,
+      );
+    // Provider handles session revocation and cookies; callers cannot supply passwords or tokens.
+    const headers = new Headers(c.req.raw.headers);
+    headers.delete('content-length');
+    return auth.handler(new Request(c.req.url, { method: 'POST', headers, body: '{}' }));
+  });
   routes.get('/api/auth/magic-link/verify', (c) => {
     c.header('Referrer-Policy', 'no-referrer');
     return auth.handler(c.req.raw);

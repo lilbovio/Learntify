@@ -7,6 +7,45 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ 'x-forwarded-for': `198.18.${bytes[0]}.${bytes[1]}` });
 });
 
+test('Spanish account settings require confirmation, preserve failure state, and revoke the deleted session', async ({
+  page,
+}) => {
+  const email = `deletion-${crypto.randomUUID()}@example.test`;
+  await page.goto('/es/settings');
+  await expect(page.getByText('Inicia sesión para administrar tu cuenta.')).toBeVisible();
+  await page.getByRole('link', { name: 'Iniciar sesión', exact: true }).click();
+  await page.getByLabel('Correo electrónico').fill(email);
+  await page.getByLabel('Confirmo que tengo 18 años o más.').check();
+  await page.getByRole('button', { name: 'Enviar enlace de acceso' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Enlace solicitado.' })).toBeVisible();
+  await page.goto(await readLocalSignInLink(email));
+  await expect(page).toHaveURL(/\/es\/start$/);
+  await page.getByRole('button', { name: 'Guardar y continuar' }).click();
+  await page.getByRole('link', { name: 'Configuración de cuenta', exact: true }).click();
+  const remove = page.getByRole('button', { name: 'Eliminar mi cuenta permanentemente' });
+  await expect(remove).toBeDisabled();
+  await page.getByLabel('Escribe DELETE para confirmar').fill('DELETE');
+  await page.route('**/api/auth/delete-user', (route) =>
+    route.fulfill({
+      status: 409,
+      json: {
+        error: { code: 'REAUTHENTICATION_REQUIRED', message: 'Sign in again' },
+        meta: { requestId: 'test' },
+      },
+    }),
+  );
+  await remove.click();
+  await expect(page.getByRole('alert')).toContainText('Cierra sesión e inicia sesión de nuevo');
+  expect((await page.request.get('/api/v1/me')).status()).toBe(200);
+  await page.unroute('**/api/auth/delete-user');
+  await remove.click();
+  await expect(page.getByRole('status')).toHaveText('Tu cuenta se ha eliminado.');
+  expect((await page.request.get('/api/v1/me')).status()).toBe(401);
+  expect((await page.request.get('/api/v1/preferences')).status()).toBe(401);
+  await page.reload();
+  await expect(page.getByText('Inicia sesión para administrar tu cuenta.')).toBeVisible();
+});
+
 test('adult learner signs in through local Worker/D1, keeps a session, and signs out', async ({
   page,
 }) => {

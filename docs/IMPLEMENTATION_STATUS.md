@@ -28,7 +28,9 @@ The complete product screen map is **not finished**. The implemented local flow 
 
 Learning preferences have validated GET/PUT contracts, a provider-independent repository interface, and a separate D1 adapter/migration. The server derives ownership from the session and rejects foreign-origin writes. Guest preferences use browser storage. Save failures preserve form input; member failures never silently save private preferences as guest data. Preferences use last-write-wins updates and are distinct from progress or mastery. Deleting an auth user cascades to preferences; the user-facing deletion workflow is still pending.
 
-Remaining screens include account settings/deletion, Google/GitHub sign-in, runnable coding exercises, assessed attempts/results, progress, review queue, projects, community/moderation and interview preparation. Community posting/chat remains gated on moderators. There are no fabricated progress statistics or links to unfinished modules in the current Today screen.
+The local profile now includes `/en/settings` and `/es/settings`: preference access, sign-out, and permanent account deletion with typed confirmation and a sign-in within 15 minutes. The default configuration keeps deletion disabled. Integration tests cover rejected origins, missing confirmation, stale sessions, session revocation, cascaded notes/preferences/operation removal and preservation of other users. This implements active local database deletion only. It does not implement production backup deletion replay, cleanup records, moderation retention or external-provider cleanup. Development mailbox and short-lived verification/rate-limit records follow their separate lifecycle; the UI does not promise complete infrastructure erasure.
+
+Remaining screens include advanced account management, Google/GitHub sign-in, runnable coding exercises, assessed attempts/results, progress, review queue, projects, community/moderation and interview preparation. Community posting/chat remains gated on moderators. There are no fabricated progress statistics or links to unfinished modules in the current Today screen.
 
 ## Next implementation boundary
 

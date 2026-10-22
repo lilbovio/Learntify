@@ -79,6 +79,11 @@ export function AccountPanel({
       ) : state === 'member' ? (
         <div>
           <p role="status">{text.signedIn}</p>
+          <p>
+            <a href={'/' + locale + '/settings'}>
+              {locale === 'en' ? 'Account settings' : 'Configuración de cuenta'}
+            </a>
+          </p>
           {standalone && (
             <p>
               <a href={'/' + locale + '/today'}>{text.continue}</a>

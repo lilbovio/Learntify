@@ -9,6 +9,7 @@ This is an early local development increment, not a production-ready learning pl
 - Separate React/Vite client and Hono Cloudflare Worker API.
 - Connected English/Spanish welcome, email sign-in/check-email, onboarding, Today and lesson screens, with localized missing-page recovery.
 - Learning goal and optional weekly time saved in the guest browser or authenticated D1 profile.
+- Bilingual local account settings with recent-sign-in checks, explicit deletion confirmation, and cascading removal of owned notes/preferences.
 - Two English/Spanish lessons with a localized learning path and prediction feedback.
 - Per-lesson/version answer persistence on the current device; honest storage/failure messages.
 - Strict shared API schemas and a small typed HTTP client.

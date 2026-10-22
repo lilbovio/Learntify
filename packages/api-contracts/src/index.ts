@@ -13,8 +13,18 @@ export const accountResponseSchema = z.object({
   data: z.object({ id: z.string(), name: z.string() }),
   meta: z.object({ requestId: z.string() }),
 });
+export const deleteAccountSchema = z.object({ confirmation: z.literal('DELETE') }).strict();
+export const deleteAccountResponseSchema = z.object({
+  success: z.literal(true),
+  message: z.literal('User deleted'),
+});
 export const capabilitiesResponseSchema = z.object({
-  data: z.object({ accounts: z.boolean(), cloudDrafts: z.boolean(), preferences: z.boolean() }),
+  data: z.object({
+    accounts: z.boolean(),
+    cloudDrafts: z.boolean(),
+    preferences: z.boolean(),
+    accountDeletion: z.boolean(),
+  }),
   meta: z.object({ requestId: z.string() }),
 });
 
