@@ -18,9 +18,21 @@ test('shows configured providers and preserves email recovery after OAuth initia
   await page.reload();
   await page.getByLabel('Correo electrónico').fill('learner@example.test');
   await page.getByRole('button', { name: 'Continuar con GitHub', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('El acceso con proveedor');
+  await expect(page.getByRole('alert')).toContainText('No se pudo cargar o iniciar');
   await expect(page.getByLabel('Correo electrónico')).toHaveValue('learner@example.test');
   await expect(
     page.getByRole('button', { name: 'Continuar con GitHub', exact: true }),
   ).toBeEnabled();
+  await page.unroute('**/api/auth/social/sign-in');
+  await page.route('**/api/auth/social/sign-in', (route) =>
+    route.fulfill({
+      status: 409,
+      json: {
+        error: { code: 'REAUTHENTICATION_REQUIRED', message: 'Sign in again' },
+        meta: { requestId: 'test' },
+      },
+    }),
+  );
+  await page.getByRole('button', { name: 'Continuar con GitHub', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('últimos 15 minutos');
 });

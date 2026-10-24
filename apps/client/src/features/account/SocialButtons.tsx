@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
+import { socialFailure, socialErrorCopy } from './social-errors';
 
 const api = createApiClient();
 export function SocialButtons({ locale, link = false }: { locale: Locale; link?: boolean }) {
   const [providers, setProviders] = useState<('google' | 'github')[]>([]);
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState<string[]>([]);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<ReturnType<typeof socialFailure> | null>(null);
   useEffect(() => {
     let active = true;
     if (link)
@@ -16,22 +17,22 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
         .then((result) => {
           if (active) setConnected(result);
         })
-        .catch(() => {
-          if (active) setFailed(true);
+        .catch((cause) => {
+          if (active) setFailure(socialFailure(cause));
         });
     void api
       .socialProviders()
       .then((result) => {
         if (active) setProviders(result);
       })
-      .catch(() => {
-        if (active) setFailed(true);
+      .catch((cause) => {
+        if (active) setFailure(socialFailure(cause));
       });
     return () => {
       active = false;
     };
   }, [link]);
-  if (!providers.length && !failed) return null;
+  if (!providers.length && !failure) return null;
   return (
     <div className="social-providers">
       {connected.length > 0 && (
@@ -56,13 +57,13 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            setFailed(false);
+            setFailure(null);
             try {
               window.location.assign(
                 await api.startSocial(link ? 'link' : 'sign-in', provider, locale),
               );
-            } catch {
-              setFailed(true);
+            } catch (cause) {
+              setFailure(socialFailure(cause));
               setBusy(false);
             }
           }}
@@ -76,13 +77,7 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
               : 'Continuar con ') + (provider === 'google' ? 'Google' : 'GitHub')}
         </button>
       ))}
-      {failed && (
-        <p role="alert">
-          {locale === 'en'
-            ? 'Provider sign-in is unavailable. Try again after signing in by email or passkey.'
-            : 'El acceso con proveedor no está disponible. Vuelve a intentarlo después de entrar por correo o clave de acceso.'}
-        </p>
-      )}
+      {failure && <p role="alert">{socialErrorCopy[locale][failure]}</p>}
     </div>
   );
 }
