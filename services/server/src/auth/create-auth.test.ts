@@ -8,6 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { createApp } from '../index';
 import production from '../production';
+import external from '../external';
 import { previewAdmission } from './preview-admission';
 import { provisionPreviewSql } from '../../scripts/provision-preview';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
@@ -82,6 +83,18 @@ describe('passwordless authentication with local D1', () => {
       bindings,
     );
     expect(deletion.status).toBe(404);
+    const localResponse = await external.fetch(
+      new Request('http://127.0.0.1:8789/api/v1/capabilities'),
+      {
+        ...bindings,
+        LOCAL_EXTERNAL_SERVICES: 'true',
+        APP_ORIGIN: 'http://127.0.0.1:5175',
+        EMAIL_FROM: 'onboarding@resend.dev',
+      },
+    );
+    expect(await localResponse.json()).toMatchObject({
+      data: { accounts: true, accountDeletion: false, cloudDrafts: true },
+    });
   });
   it('provisions unverified preview accounts idempotently and rejects unlisted requests before mail or tokens', async () => {
     const sql = provisionPreviewSql('Learner@Example.test', "Learner's name");

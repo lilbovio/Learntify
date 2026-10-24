@@ -8,6 +8,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "dev:external:server": "pnpm --filter @learntify/server dev:external",
+    "dev:external:client": "pnpm --filter @learntify/client exec vite --mode external --host 127.0.0.1 --port 5175 --strictPort",
     "dev:client": "pnpm --filter @learntify/client dev",
     "dev:server": "pnpm --filter @learntify/server dev",
     "db:local": "pnpm --filter @learntify/server db:local",

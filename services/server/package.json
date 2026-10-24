@@ -7,10 +7,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "dev:external": "wrangler dev --config external/wrangler.jsonc --ip 127.0.0.1 --port 8789",
     "dev": "wrangler dev --local --ip 127.0.0.1 --port 8787",
     "dev:accounts": "wrangler dev --config wrangler.local.jsonc --local --ip 127.0.0.1 --port 8788",
     "db:local": "wrangler d1 migrations apply learntify-local --local --config wrangler.local.jsonc && wrangler d1 execute learntify-local --local --config wrangler.local.jsonc --file local-migrations/0001_dev_mailbox.sql",
-    "build": "wrangler deploy --dry-run --outdir dist"
+    "build": "wrangler deploy --dry-run --outdir dist && wrangler deploy --dry-run --config external/wrangler.example.jsonc --outdir dist/external"
   },
   "dependencies": {
     "@learntify/email": "workspace:*",

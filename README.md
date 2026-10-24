@@ -42,6 +42,8 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to the separate local Worker on 
 
 For working local sign-in without external email, follow [local account development](docs/LOCAL_ACCOUNTS.md). It uses separate ports and local D1; no provider signup is needed.
 
+To test actual Cloudflare D1 and Resend while the app runs locally, follow [external local testing](docs/EXTERNAL_LOCAL_TESTING.md). This separate profile requires provider accounts and stays restricted to a single test recipient; it needs no purchased domain.
+
 ## Validation
 
 ```sh

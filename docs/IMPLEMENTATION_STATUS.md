@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated October 22, 2026.
+Updated October 23, 2026.
 
 The owner has authorized local implementation, fixes, testing, and CI setup. This supersedes the planning-only restriction in older documents. Production deployment, purchases, external messaging, and paid infrastructure are not authorized.
 
@@ -33,6 +33,8 @@ The local profile now includes `/en/settings` and `/es/settings`: preference acc
 Remaining screens include advanced account management, Google/GitHub sign-in, runnable coding exercises, assessed attempts/results, progress, review queue, projects, community/moderation and interview preparation. Community posting/chat remains gated on moderators. There are no fabricated progress statistics or links to unfinished modules in the current Today screen.
 
 ## Next implementation boundary
+
+A separate loopback-only external-testing profile now composes real Resend delivery and a remote D1 binding at client port 5175 / Worker port 8789. It permits one preview recipient and the Resend testing sender, leaving production HTTPS requirements unchanged. Its build runs in CI with placeholder bindings; tests do not call live providers. Provider account authorization, real key entry, test database creation and live delivery verification are still manual setup steps. See [external local testing](EXTERNAL_LOCAL_TESTING.md). The setup itself does not establish production readiness.
 
 Preview admission now requires a bounded exact-email list in production existing-account mode. Unlisted requests do not issue tokens or mail, pending links cannot create sessions after removal, and existing sessions lose private API access when the list changes. A Node 24 provisioning tool generates reviewable, idempotent SQL without connecting to a database or verifying email. These controls do not replace request/write quotas, general signup safeguards or production recovery testing.
 

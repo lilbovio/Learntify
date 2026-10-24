@@ -1,6 +1,10 @@
 import { createApp } from './index';
 import { createAuth } from './auth/create-auth';
-import { readAccountConfiguration, type ProductionBindings } from './configuration';
+import {
+  readAccountConfiguration,
+  type ProductionBindings,
+  type AccountConfiguration,
+} from './configuration';
 import { createResendDelivery } from '@learntify/email';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
@@ -13,6 +17,38 @@ const unavailable = () =>
     headers: { 'Cache-Control': 'no-store' },
   });
 
+export async function serveAccounts(
+  request: Request,
+  configuration: Extract<AccountConfiguration, { kind: 'ready' }>,
+) {
+  const admission = previewAdmission(configuration.previewEmails);
+  const auth = createAuth({
+    admission,
+    database: configuration.database,
+    origin: configuration.origin,
+    secret: configuration.secret,
+    sendSignInLink: createResendDelivery({
+      database: configuration.database,
+      origin: configuration.origin,
+      apiKey: configuration.apiKey,
+      from: configuration.from,
+    }),
+  });
+  try {
+    await auth.$context;
+  } catch {
+    return unavailable();
+  }
+  return createApp({
+    auth,
+    admission,
+    drafts: new D1DraftRepository(configuration.database as unknown as DraftDatabase),
+    preferences: new D1PreferencesRepository(
+      configuration.database as unknown as PreferencesDatabase,
+    ),
+  }).fetch(request);
+}
+
 /** Same-origin /api route; signup and production deletion remain closed pending launch safeguards. */
 export default {
   async fetch(request: Request, env: ProductionBindings) {
@@ -20,31 +56,6 @@ export default {
     if (configuration.kind === 'disabled') return publicApp.fetch(request);
     if (configuration.kind === 'invalid') return unavailable();
     if (new URL(request.url).origin !== configuration.origin) return unavailable();
-    const admission = previewAdmission(configuration.previewEmails);
-    const auth = createAuth({
-      admission,
-      database: configuration.database,
-      origin: configuration.origin,
-      secret: configuration.secret,
-      sendSignInLink: createResendDelivery({
-        database: configuration.database,
-        origin: configuration.origin,
-        apiKey: configuration.apiKey,
-        from: configuration.from,
-      }),
-    });
-    try {
-      await auth.$context;
-    } catch {
-      return unavailable();
-    }
-    return createApp({
-      auth,
-      admission,
-      drafts: new D1DraftRepository(configuration.database as unknown as DraftDatabase),
-      preferences: new D1PreferencesRepository(
-        configuration.database as unknown as PreferencesDatabase,
-      ),
-    }).fetch(request);
+    return serveAccounts(request, configuration);
   },
 };

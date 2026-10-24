@@ -25,7 +25,10 @@ export type AccountConfiguration =
     };
 
 /** Reports field names only. Never include values in diagnostics or HTTP responses. */
-export function readAccountConfiguration(env: ProductionBindings): AccountConfiguration {
+export function readAccountConfiguration(
+  env: ProductionBindings,
+  mode: 'production' | 'local-external' = 'production',
+): AccountConfiguration {
   if (env.ACCOUNT_MODE === undefined || env.ACCOUNT_MODE === 'disabled')
     return { kind: 'disabled' };
   if (env.ACCOUNT_MODE !== 'existing-accounts')
@@ -36,10 +39,12 @@ export function readAccountConfiguration(env: ProductionBindings): AccountConfig
   try {
     const origin = new URL(env.APP_ORIGIN ?? '');
     if (
-      origin.protocol !== 'https:' ||
-      origin.origin !== env.APP_ORIGIN ||
-      !origin.hostname.includes('.') ||
-      origin.hostname === '127.0.0.1'
+      mode === 'local-external'
+        ? env.APP_ORIGIN !== 'http://127.0.0.1:5175'
+        : origin.protocol !== 'https:' ||
+          origin.origin !== env.APP_ORIGIN ||
+          !origin.hostname.includes('.') ||
+          origin.hostname === '127.0.0.1'
     )
       fields.push('APP_ORIGIN');
   } catch {
