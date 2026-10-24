@@ -5,7 +5,7 @@ import { readAccountConfiguration, type ProductionBindings } from './configurati
 const env: ProductionBindings & { LOCAL_EXTERNAL_SERVICES: string } = {
   LOCAL_EXTERNAL_SERVICES: 'true',
   ACCOUNT_MODE: 'existing-accounts',
-  APP_ORIGIN: 'http://127.0.0.1:5175',
+  APP_ORIGIN: 'http://localhost:5175',
   AUTH_SECRET: 'a'.repeat(48),
   RESEND_API_KEY: 're_' + 'b'.repeat(24),
   EMAIL_FROM: 'onboarding@resend.dev',
@@ -22,7 +22,7 @@ const env: ProductionBindings & { LOCAL_EXTERNAL_SERVICES: string } = {
 it('keeps production HTTPS validation while explicitly supporting one local testing origin', () => {
   expect(readAccountConfiguration(env).kind).toBe('invalid');
   expect(readAccountConfiguration(env, 'local-external').kind).toBe('ready');
-  for (const origin of ['http://localhost:5175', 'http://127.0.0.1:5174', 'https://learntify.test'])
+  for (const origin of ['http://127.0.0.1:5175', 'http://localhost:5174', 'https://learntify.test'])
     expect(readAccountConfiguration({ ...env, APP_ORIGIN: origin }, 'local-external').kind).toBe(
       'invalid',
     );
@@ -30,7 +30,7 @@ it('keeps production HTTPS validation while explicitly supporting one local test
 it('rejects public access, disabled mode, extra recipients and incomplete configuration before provider use', async () => {
   for (const url of [
     'https://learntify.test/api/v1/me',
-    'http://localhost:8789/api/v1/me',
+    'http://attacker.test:8789/api/v1/me',
     'https://127.0.0.1/api/v1/me',
   ])
     expect((await external.fetch(new Request(url), env)).status).toBe(403);

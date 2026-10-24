@@ -14,11 +14,12 @@
     "build": "wrangler deploy --dry-run --outdir dist && wrangler deploy --dry-run --config external/wrangler.example.jsonc --outdir dist/external"
   },
   "dependencies": {
-    "@learntify/email": "workspace:*",
+    "@better-auth/passkey": "1.7.12",
     "@learntify/api-contracts": "workspace:*",
     "@learntify/curriculum": "workspace:*",
-    "@learntify/learning": "workspace:*",
     "@learntify/draft-storage": "workspace:*",
+    "@learntify/email": "workspace:*",
+    "@learntify/learning": "workspace:*",
     "@learntify/preferences-storage": "workspace:*",
     "better-auth": "1.7.12",
     "hono": "4.13.13"

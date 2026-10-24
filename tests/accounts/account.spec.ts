@@ -132,7 +132,7 @@ test('lesson notes sync across sessions and require an explicit choice on confli
   await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
 
   const second = await browser.newContext({
-    baseURL: 'http://127.0.0.1:5174',
+    baseURL: 'http://localhost:5174',
     storageState: await page.context().storageState(),
   });
   try {
@@ -154,7 +154,7 @@ test('lesson notes sync across sessions and require an explicit choice on confli
     injected = true;
     const body = route.request().postDataJSON();
     const competing = await page.request.put(route.request().url(), {
-      headers: { Origin: 'http://127.0.0.1:5174' },
+      headers: { Origin: 'http://localhost:5174' },
       data: { ...body, content: 'Notes from another device.', operationId: crypto.randomUUID() },
     });
     expect(competing.status()).toBe(200);

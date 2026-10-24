@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   timeout: 45000,
   reporter: process.env.CI ? 'github' : 'list',
-  use: { baseURL: 'http://127.0.0.1:5174', trace: 'retain-on-failure' },
+  use: { baseURL: 'http://localhost:5174', trace: 'retain-on-failure' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
@@ -18,7 +18,7 @@ export default defineConfig({
     },
     {
       command: 'pnpm dev:accounts:client',
-      url: 'http://127.0.0.1:5174',
+      url: 'http://localhost:5174',
       reuseExistingServer: false,
       timeout: 120000,
     },

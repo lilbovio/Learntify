@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
 import { accountCopy } from './copy';
+import { passkeyAuth, supportsPasskeys } from './passkeys';
 
 const api = createApiClient();
 export function AccountPanel({
@@ -79,6 +80,7 @@ export function AccountPanel({
       ) : state === 'member' ? (
         <div>
           <p role="status">{text.signedIn}</p>
+          <p>{text.sessionHelp}</p>
           <p>
             <a href={'/' + locale + '/settings'}>
               {locale === 'en' ? 'Account settings' : 'Configuración de cuenta'}
@@ -142,6 +144,27 @@ export function AccountPanel({
           ) : (
             <>
               <p>{text.description}</p>
+              {supportsPasskeys() && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setFailed(false);
+                    try {
+                      const result = await passkeyAuth.signIn.passkey();
+                      if (result.error) throw new Error('Passkey sign-in failed');
+                      window.location.assign('/' + locale + '/today');
+                    } catch {
+                      setFailed(true);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {locale === 'en' ? 'Sign in with a passkey' : 'Entrar con una clave de acceso'}
+                </button>
+              )}
               <label htmlFor="account-email">{text.email}</label>
               <input
                 id="account-email"

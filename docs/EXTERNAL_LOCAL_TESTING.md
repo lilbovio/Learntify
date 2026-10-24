@@ -39,7 +39,7 @@ pnpm dev:external:server
 pnpm dev:external:client
 ```
 
-Open `http://127.0.0.1:5175`. The client proxies `/api` to port 8789. Sign in with your single permitted email, open the email link on this machine, set learning preferences, save notes, reload, and sign out. Check that notes and preferences persist in the test database and that signed-out private requests are denied. Test addresses that are not admitted must not cause email delivery. Real requests consume provider quotas; automated tests use disposable local databases and simulated mail delivery instead.
+Open `http://localhost:5175`. The client proxies `/api` to port 8789. Sign in with your single permitted email, open the email link on this machine, set learning preferences, save notes, reload, and sign out. Check that notes and preferences persist in the test database and that signed-out private requests are denied. Test addresses that are not admitted must not cause email delivery. Real requests consume provider quotas; automated tests use disposable local databases and simulated mail delivery instead.
 
 The profile is explicitly restricted to HTTP loopback, one recipient, and the Resend testing sender. Production retains its HTTPS-only configuration. This test does not validate deployed HTTPS cookies, edge CPU limits, backup recovery or public load capacity.
 

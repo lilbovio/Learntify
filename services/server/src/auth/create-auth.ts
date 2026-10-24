@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { magicLink } from 'better-auth/plugins';
+import { passkey } from '@better-auth/passkey';
 import type { D1Database } from '@cloudflare/workers-types';
 import type { AccountAdmission } from './preview-admission';
 
@@ -59,6 +60,25 @@ export function createAuth(configuration: AuthConfiguration) {
       },
     },
     plugins: [
+      passkey({
+        rpID: origin.hostname,
+        rpName: 'Learntify',
+        origin: configuration.origin,
+        authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+        registration: {
+          requireSession: true,
+          afterVerification: ({ verification }) => {
+            if (!verification.registrationInfo?.userVerified)
+              throw new Error('Device verification required.');
+          },
+        },
+        authentication: {
+          afterVerification: ({ verification }) => {
+            if (!verification.authenticationInfo.userVerified)
+              throw new Error('Device verification required.');
+          },
+        },
+      }),
       magicLink({
         disableSignUp: configuration.allowSignUp !== true,
         expiresIn: 60 * 10,

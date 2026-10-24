@@ -39,7 +39,50 @@ export function createAccountRoutes(auth: LearntifyAuth, admission?: AccountAdmi
     return auth.handler(c.req.raw);
   });
   // Expose only the account operations implemented by the client.
+  const passkeyRegistrationPaths = new Set([
+    '/api/auth/passkey/generate-register-options',
+    '/api/auth/passkey/verify-registration',
+    '/api/auth/passkey/delete-passkey',
+  ]);
+  routes.use('/api/auth/passkey/*', async (c, next) => {
+    if (
+      passkeyRegistrationPaths.has(c.req.path) ||
+      c.req.path === '/api/auth/passkey/list-user-passkeys'
+    ) {
+      const session = await auth.api.getSession({ headers: c.req.raw.headers });
+      if (!session || !session.user.emailVerified || (admission && !admission(session.user.email)))
+        return c.json(errorBody(c, 'UNAUTHENTICATED', 'Sign in to continue.'), 401);
+      if (
+        passkeyRegistrationPaths.has(c.req.path) &&
+        Date.now() - new Date(session.session.createdAt).getTime() >=
+          sensitiveSessionAgeSeconds * 1000
+      )
+        return c.json(
+          errorBody(c, 'REAUTHENTICATION_REQUIRED', 'Sign in again to manage passkeys.'),
+          409,
+        );
+    }
+    await next();
+  });
+  for (const path of [
+    'generate-register-options',
+    'generate-authenticate-options',
+    'list-user-passkeys',
+  ])
+    routes.get('/api/auth/passkey/' + path, (c) => auth.handler(c.req.raw));
+  for (const path of ['verify-registration', 'verify-authentication', 'delete-passkey'])
+    routes.post('/api/auth/passkey/' + path, (c) => auth.handler(c.req.raw));
   routes.post('/api/auth/sign-out', (c) => auth.handler(c.req.raw));
+  routes.post('/api/auth/revoke-other-sessions', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session || (admission && !admission(session.user.email)))
+      return c.json(errorBody(c, 'UNAUTHENTICATED', 'Sign in to continue.'), 401);
+    // No client-supplied user IDs or tokens: the provider derives ownership from this session.
+    const headers = new Headers(c.req.raw.headers);
+    headers.delete('content-length');
+    headers.set('Content-Type', 'application/json');
+    return auth.handler(new Request(c.req.url, { method: 'POST', headers, body: '{}' }));
+  });
   routes.post('/api/auth/delete-user', async (c) => {
     if (!auth.options.user?.deleteUser?.enabled)
       return c.json(errorBody(c, 'NOT_FOUND', 'Account deletion is unavailable.'), 404);

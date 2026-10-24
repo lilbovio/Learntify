@@ -8,7 +8,7 @@ export default {
     if (
       env.LOCAL_EXTERNAL_SERVICES !== 'true' ||
       url.protocol !== 'http:' ||
-      url.hostname !== '127.0.0.1'
+      !['127.0.0.1', 'localhost'].includes(url.hostname)
     )
       return new Response('Local external-services testing only.', { status: 403 });
     const configuration = readAccountConfiguration(env, 'local-external');

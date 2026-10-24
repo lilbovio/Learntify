@@ -28,10 +28,9 @@ describe('passwordless authentication with local D1', () => {
     });
     db = (await runtime.getD1Database('DB')) as unknown as D1Database;
     deliveries = [];
-    const schema = await readFile(
-      new URL('../../migrations/0001_auth.sql', import.meta.url),
-      'utf8',
-    );
+    const schema =
+      (await readFile(new URL('../../migrations/0001_auth.sql', import.meta.url), 'utf8')) +
+      (await readFile(new URL('../../migrations/0005_passkeys.sql', import.meta.url), 'utf8'));
     for (const statement of schema
       .replace(/^--.*$/gm, '')
       .split(';')
@@ -88,7 +87,7 @@ describe('passwordless authentication with local D1', () => {
       {
         ...bindings,
         LOCAL_EXTERNAL_SERVICES: 'true',
-        APP_ORIGIN: 'http://127.0.0.1:5175',
+        APP_ORIGIN: 'http://localhost:5175',
         EMAIL_FROM: 'onboarding@resend.dev',
       },
     );
@@ -233,6 +232,12 @@ describe('passwordless authentication with local D1', () => {
     expect(JSON.stringify(stored.results)).not.toContain(rawToken);
     const verified = await auth.handler(new Request(url));
     expect(verified.status).toBe(302);
+    const sessionCookie = verified.headers
+      .getSetCookie()
+      .find((value) => value.includes('session_token='));
+    expect(sessionCookie).toContain('HttpOnly');
+    expect(sessionCookie).toContain('Secure');
+    expect(sessionCookie).toMatch(/Max-Age=604800/i);
     const cookie = verified.headers
       .getSetCookie()
       .map((value) => value.split(';')[0])
@@ -241,6 +246,9 @@ describe('passwordless authentication with local D1', () => {
     const me = await routes.request(origin + '/api/v1/me', { headers: { cookie } });
     expect(me.status).toBe(200);
     expect(Object.keys((await me.json()).data).sort()).toEqual(['id', 'name']);
+    // A later page load uses the persistent cookie without issuing another email.
+    expect((await routes.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(200);
+    expect(deliveries).toHaveLength(1);
     const replay = await auth.handler(new Request(url));
     expect(replay.headers.get('location')).toContain('error=');
     expect(replay.headers.get('set-cookie') ?? '').not.toContain('session_token=');
@@ -258,6 +266,57 @@ describe('passwordless authentication with local D1', () => {
     expect((await requestLink(auth, 'https://attacker.test')).status).toBe(403);
     expect(deliveries).toHaveLength(0);
     expect((await createAccountRoutes(auth).request(origin + '/api/v1/me')).status).toBe(401);
+  });
+  it('revokes only other sessions and protects passkey enrollment with recent authentication', async () => {
+    const cookies: string[] = [];
+    for (const email of ['learner@example.com', 'learner@example.com', 'other@example.com']) {
+      await requestLink(auth, origin, email);
+      const response = await auth.handler(new Request(deliveries.at(-1)!.url));
+      cookies.push(
+        response.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; '),
+      );
+    }
+    const routes = createAccountRoutes(auth);
+    const revoke = (cookie = '', requestOrigin = origin) =>
+      routes.request(origin + '/api/auth/revoke-other-sessions', {
+        method: 'POST',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    expect((await revoke()).status).toBe(401);
+    expect((await revoke(cookies[0], 'https://attacker.test')).status).toBe(403);
+    expect((await revoke(cookies[0])).status).toBe(200);
+    for (const [index, status] of [
+      [0, 200],
+      [1, 401],
+      [2, 200],
+    ] as const)
+      expect(
+        (await routes.request(origin + '/api/v1/me', { headers: { cookie: cookies[index]! } }))
+          .status,
+      ).toBe(status);
+    const register = (cookie = '') =>
+      routes.request(origin + '/api/auth/passkey/generate-register-options', {
+        headers: { cookie },
+      });
+    expect((await register()).status).toBe(401);
+    expect((await register(cookies[0])).status).toBe(200);
+    expect(
+      (
+        await createAccountRoutes(auth, () => false).request(
+          origin + '/api/auth/passkey/list-user-passkeys',
+          { headers: { cookie: cookies[0]! } },
+        )
+      ).status,
+    ).toBe(401);
+    await db
+      .prepare('UPDATE session SET createdAt = ?')
+      .bind(Date.now() - 16 * 60 * 1000)
+      .run();
+    expect((await register(cookies[0])).status).toBe(409);
   });
   it('rejects expired links without creating a session', async () => {
     await requestLink(auth);

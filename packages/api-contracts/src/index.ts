@@ -14,6 +14,7 @@ export const accountResponseSchema = z.object({
   meta: z.object({ requestId: z.string() }),
 });
 export const deleteAccountSchema = z.object({ confirmation: z.literal('DELETE') }).strict();
+export const revokeSessionsResponseSchema = z.object({ status: z.literal(true) });
 export const deleteAccountResponseSchema = z.object({
   success: z.literal(true),
   message: z.literal('User deleted'),

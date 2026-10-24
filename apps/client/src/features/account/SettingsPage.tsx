@@ -3,6 +3,8 @@ import { ApiError, createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
 import { PageFrame } from '../../shared/PageFrame';
 import { settingsCopy } from './settings-copy';
+import { accountCopy } from './copy';
+import { PasskeySettings } from './PasskeySettings';
 
 const api = createApiClient();
 export function SettingsPage({ locale }: { locale: Locale }) {
@@ -15,6 +17,7 @@ export function SettingsPage({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<'request' | 'reauth' | null>(null);
   const [reload, setReload] = useState(0);
+  const [sessionsRevoked, setSessionsRevoked] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setState('loading');
@@ -76,6 +79,32 @@ export function SettingsPage({ locale }: { locale: Locale }) {
           >
             {text.signOut}
           </button>
+          <p>{accountCopy[locale].sessionHelp}</p>
+          <PasskeySettings locale={locale} />
+          <section className="clay-card" aria-labelledby="sessions-title">
+            <h2 id="sessions-title">{text.otherSessions}</h2>
+            <p>{text.otherSessionsHelp}</p>
+            <button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError(null);
+                setSessionsRevoked(false);
+                try {
+                  await api.revokeOtherSessions();
+                  setSessionsRevoked(true);
+                } catch (cause) {
+                  if (cause instanceof ApiError && cause.status === 401) setState('guest');
+                  else setError('request');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {text.otherSessions}
+            </button>
+            {sessionsRevoked && <p role="status">{text.otherSessionsDone}</p>}
+          </section>
           {canDelete ? (
             <section className="clay-card account-deletion" aria-labelledby="deletion-title">
               <h2 id="deletion-title">{text.deletion}</h2>

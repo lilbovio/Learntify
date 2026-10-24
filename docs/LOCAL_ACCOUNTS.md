@@ -13,7 +13,7 @@ pnpm dev:accounts:server
 pnpm dev:accounts:client
 ```
 
-Open http://127.0.0.1:5174 and select **Sign in**. Enter a test email and confirm that you are 18 or older. This is self-attestation, not age verification. Request a link, then retrieve it explicitly:
+Open http://localhost:5174 and select **Sign in**. Enter a test email and confirm that you are 18 or older. This is self-attestation, not age verification. Request a link, then retrieve it explicitly:
 
 ```sh
 node tooling/local/mailbox.mjs learner@example.test

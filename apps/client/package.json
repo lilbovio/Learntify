@@ -11,8 +11,10 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@better-auth/passkey": "1.7.12",
     "@learntify/api-client": "workspace:*",
     "@learntify/api-contracts": "workspace:*",
+    "better-auth": "1.7.12",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

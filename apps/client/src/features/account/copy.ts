@@ -16,6 +16,8 @@ export const accountCopy = {
     sent: 'Link requested. If this address has access, a sign-in email will arrive shortly. Its link expires in 10 minutes.',
     signedIn: 'You’re signed in. Cloud progress is not available in this preview yet.',
     signOut: 'Sign out',
+    sessionHelp:
+      'On your own device, close the tab to stay signed in. Your session lasts up to 7 days. Signing out ends it, so your next email sign-in needs a new link.',
     leaveUnsaved: 'Some notes are not saved. Sign out anyway?',
     error: 'We couldn’t complete this request. Try again shortly; your lesson is still available.',
     retry: 'Try again',
@@ -40,6 +42,8 @@ export const accountCopy = {
     signedIn:
       'Iniciaste sesión. El progreso en la nube aún no está disponible en esta vista previa.',
     signOut: 'Cerrar sesión',
+    sessionHelp:
+      'En tu propio dispositivo, cierra la pestaña para mantener tu sesión. La sesión dura hasta 7 días. Cerrar sesión la termina; el siguiente acceso por correo requiere un enlace nuevo.',
     leaveUnsaved: 'Hay notas sin guardar. ¿Quieres cerrar sesión de todos modos?',
     error:
       'No pudimos completar la solicitud. Inténtalo en un momento; tu lección sigue disponible.',

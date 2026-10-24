@@ -2,6 +2,9 @@ import type { Locale } from '@learntify/api-contracts';
 export const settingsCopy = {
   en: {
     title: 'Account settings',
+    otherSessions: 'Sign out other sessions',
+    otherSessionsHelp: 'End your other signed-in sessions while keeping this browser signed in.',
+    otherSessionsDone: 'Your other sessions have been signed out.',
     loading: 'Opening your account…',
     guest: 'Sign in to manage your account.',
     signIn: 'Sign in',
@@ -24,6 +27,9 @@ export const settingsCopy = {
   },
   es: {
     title: 'Configuración de cuenta',
+    otherSessions: 'Cerrar las otras sesiones',
+    otherSessionsHelp: 'Termina tus otras sesiones y mantén abierta la de este navegador.',
+    otherSessionsDone: 'Se cerraron tus otras sesiones.',
     loading: 'Abriendo tu cuenta…',
     guest: 'Inicia sesión para administrar tu cuenta.',
     signIn: 'Iniciar sesión',

@@ -1,5 +1,6 @@
 import {
   apiErrorSchema,
+  revokeSessionsResponseSchema,
   deleteAccountSchema,
   deleteAccountResponseSchema,
   accountResponseSchema,
@@ -37,6 +38,18 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async revokeOtherSessions() {
+      return revokeSessionsResponseSchema.parse(
+        await read(
+          await fetcher('/api/auth/revoke-other-sessions', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+          }),
+        ),
+      );
+    },
     async deleteAccount(confirmation: string) {
       return deleteAccountResponseSchema.parse(
         await read(

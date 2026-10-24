@@ -40,7 +40,7 @@ export function readAccountConfiguration(
     const origin = new URL(env.APP_ORIGIN ?? '');
     if (
       mode === 'local-external'
-        ? env.APP_ORIGIN !== 'http://127.0.0.1:5175'
+        ? env.APP_ORIGIN !== 'http://localhost:5175'
         : origin.protocol !== 'https:' ||
           origin.origin !== env.APP_ORIGIN ||
           !origin.hostname.includes('.') ||

@@ -24,7 +24,7 @@ export async function readLocalSignInLink(email) {
   );
   const result = JSON.parse(stdout);
   const url = result[0]?.results?.[0]?.url;
-  if (typeof url !== 'string' || new URL(url).origin !== 'http://127.0.0.1:5174')
+  if (typeof url !== 'string' || new URL(url).origin !== 'http://localhost:5174')
     throw new Error('No current local sign-in link found.');
   return url;
 }

@@ -17,7 +17,7 @@ export default {
     if (
       env.LOCAL_ACCOUNTS !== 'true' ||
       !['127.0.0.1', 'localhost'].includes(hostname) ||
-      env.APP_ORIGIN !== 'http://127.0.0.1:5174'
+      env.APP_ORIGIN !== 'http://localhost:5174'
     )
       return new Response('Local account development only.', { status: 403 });
     const auth = createAuth({
