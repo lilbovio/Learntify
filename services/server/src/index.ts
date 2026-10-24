@@ -8,13 +8,22 @@ import {
   predictionResponseSchema,
 } from '@learntify/api-contracts';
 import { checkPrediction, getLesson, listLessons } from '@learntify/curriculum';
-import type { DraftRepository } from '@learntify/learning';
+import type { DraftRepository, PreferencesRepository } from '@learntify/learning';
 import type { LearntifyAuth } from './auth/create-auth';
 import { createAccountRoutes } from './auth/routes';
 import { createDraftRoutes } from './learning/draft-routes';
+import { createPreferencesRoutes } from './learning/preferences-routes';
+import type { AccountAdmission } from './auth/preview-admission';
 
 type Variables = { requestId: string };
-export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRepository } = {}) {
+export function createApp(
+  dependencies: {
+    auth?: LearntifyAuth;
+    drafts?: DraftRepository;
+    preferences?: PreferencesRepository;
+    admission?: AccountAdmission;
+  } = {},
+) {
   const app = new Hono<{ Variables: Variables }>();
 
   app.use('*', async (c, next) => {
@@ -24,6 +33,31 @@ export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRe
     await next();
     c.header('X-Request-Id', c.get('requestId'));
   });
+
+  if (dependencies.auth && dependencies.admission) {
+    const { auth, admission } = dependencies;
+    app.use('/api/v1/*', async (c, next) => {
+      const path = c.req.path;
+      const publicRead =
+        c.req.method === 'GET' &&
+        (['/api/v1/health', '/api/v1/capabilities', '/api/v1/lessons'].includes(path) ||
+          /^\/api\/v1\/lessons\/[^/]+$/.test(path));
+      const publicPrediction =
+        c.req.method === 'POST' && /^\/api\/v1\/lessons\/[^/]+\/predictions$/.test(path);
+      if (!publicRead && !publicPrediction) {
+        const session = await auth.api.getSession({ headers: c.req.raw.headers });
+        if (!session || !admission(session.user.email))
+          return c.json(
+            {
+              error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
+              meta: { requestId: c.get('requestId') },
+            },
+            401,
+          );
+      }
+      await next();
+    });
+  }
 
   app.use(
     '/api/v1/lessons/:id/predictions',
@@ -49,6 +83,8 @@ export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRe
         lessons: true,
         predictionPractice: true,
         accounts: Boolean(dependencies.auth),
+        accountDeletion: dependencies.auth?.options.user?.deleteUser?.enabled === true,
+        preferences: Boolean(dependencies.auth && dependencies.preferences),
         cloudDrafts: Boolean(dependencies.auth && dependencies.drafts),
         codeExecution: false,
         community: false,
@@ -159,7 +195,9 @@ export function createApp(dependencies: { auth?: LearntifyAuth; drafts?: DraftRe
   });
 
   if (dependencies.auth) {
-    app.route('/', createAccountRoutes(dependencies.auth));
+    app.route('/', createAccountRoutes(dependencies.auth, dependencies.admission));
+    if (dependencies.preferences)
+      app.route('/', createPreferencesRoutes(dependencies.auth, dependencies.preferences));
     if (dependencies.drafts)
       app.route('/', createDraftRoutes(dependencies.auth, dependencies.drafts));
   }

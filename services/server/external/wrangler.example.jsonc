@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "learntify-external-local",
+  "main": "../src/external.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "send_metrics": false,
+  "observability": { "enabled": false },
+  "vars": {
+    "LOCAL_EXTERNAL_SERVICES": "true",
+    "ACCOUNT_MODE": "existing-accounts",
+    "APP_ORIGIN": "http://localhost:5175",
+    "EMAIL_FROM": "onboarding@resend.dev",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "learntify-external-test",
+      "database_id": "REPLACE_WITH_TEST_DATABASE_ID",
+      "remote": true,
+      "migrations_dir": "../migrations",
+    },
+  ],
+}

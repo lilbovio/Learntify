@@ -7,6 +7,11 @@ import { createAccountRoutes } from './routes';
 import { readFile } from 'node:fs/promises';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { createApp } from '../index';
+import production from '../production';
+import external from '../external';
+import { previewAdmission } from './preview-admission';
+import { provisionPreviewSql } from '../../scripts/provision-preview';
+import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
 describe('passwordless authentication with local D1', () => {
   let runtime: Miniflare;
@@ -23,7 +28,170 @@ describe('passwordless authentication with local D1', () => {
     });
     db = (await runtime.getD1Database('DB')) as unknown as D1Database;
     deliveries = [];
+    const schema =
+      (await readFile(new URL('../../migrations/0001_auth.sql', import.meta.url), 'utf8')) +
+      (await readFile(new URL('../../migrations/0005_passkeys.sql', import.meta.url), 'utf8'));
+    for (const statement of schema
+      .replace(/^--.*$/gm, '')
+      .split(';')
+      .filter((part) => part.trim()))
+      await db.prepare(statement).run();
+    // Initialize auth only after migrations: the provider validates schema eagerly.
     auth = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      allowSignUp: true,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    await auth.$context;
+  });
+  afterEach(async () => {
+    await runtime?.dispose();
+  });
+  it('keeps the committed schema aligned with the pinned auth configuration', async () => {
+    const plan = await getMigrations(auth.options);
+    expect(plan.toBeCreated).toEqual([]);
+    expect(plan.toBeAdded).toEqual([]);
+    expect(plan.toBeAddedIndexes).toEqual([]);
+    expect(plan.schemaProblems).toEqual([]);
+  });
+  it('composes production account routes with D1 but keeps signup and deletion closed', async () => {
+    const bindings = {
+      ACCOUNT_MODE: 'existing-accounts',
+      APP_ORIGIN: origin,
+      AUTH_SECRET: 'a'.repeat(40),
+      RESEND_API_KEY: 're_' + 'b'.repeat(24),
+      EMAIL_FROM: 'learn@learntify.test',
+      PREVIEW_EMAILS: 'learner@example.test',
+      DB: db,
+    };
+    const response = await production.fetch(new Request(origin + '/api/v1/capabilities'), bindings);
+    expect(await response.json()).toMatchObject({
+      data: { accounts: true, cloudDrafts: true, preferences: true, accountDeletion: false },
+    });
+    expect((await production.fetch(new Request(origin + '/api/v1/me'), bindings)).status).toBe(401);
+    const deletion = await production.fetch(
+      new Request(origin + '/api/auth/delete-user', {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      }),
+      bindings,
+    );
+    expect(deletion.status).toBe(404);
+    const localResponse = await external.fetch(
+      new Request('http://127.0.0.1:8789/api/v1/capabilities'),
+      {
+        ...bindings,
+        LOCAL_EXTERNAL_SERVICES: 'true',
+        APP_ORIGIN: 'http://localhost:5175',
+        EMAIL_FROM: 'onboarding@resend.dev',
+      },
+    );
+    expect(await localResponse.json()).toMatchObject({
+      data: { accounts: true, accountDeletion: false, cloudDrafts: true },
+    });
+  });
+  it('provisions unverified preview accounts idempotently and rejects unlisted requests before mail or tokens', async () => {
+    const sql = provisionPreviewSql('Learner@Example.test', "Learner's name");
+    await db.prepare(sql).run();
+    await db.prepare(sql).run();
+    expect((await db.prepare('SELECT name, email, emailVerified FROM user').all()).results).toEqual(
+      [{ name: "Learner's name", email: 'learner@example.test', emailVerified: 0 }],
+    );
+    expect(() => provisionPreviewSql('a@example.test,b@example.test', 'Name')).toThrow();
+    expect(() => provisionPreviewSql('learner@example.test', '\n')).toThrow();
+    const admission = previewAdmission(new Set(['learner@example.test']));
+    const closed = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      admission,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    const routes = createAccountRoutes(closed, admission);
+    const request = (email: string) =>
+      routes.request(origin + '/api/auth/sign-in/magic-link', {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, metadata: { adultConfirmed: true } }),
+      });
+    const blocked = await request('other@example.test');
+    expect(blocked.status).toBe(200);
+    expect(await blocked.json()).toEqual({ status: true });
+    expect(deliveries).toHaveLength(0);
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM verification').first<{ count: number }>())
+        ?.count,
+    ).toBe(0);
+    expect((await request('learner@example.test')).status).toBe(200);
+    const verified = await closed.handler(new Request(deliveries[0]!.url));
+    const cookie = verified.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    expect(cookie).toContain('session_token');
+    const allowedApp = createApp({ auth: closed, admission });
+    expect((await allowedApp.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(
+      200,
+    );
+    const removed = createApp({ auth: closed, admission: () => false });
+    for (const endpoint of [
+      '/api/v1/me',
+      '/api/v1/preferences',
+      '/api/v1/drafts/private',
+      '/api/v1/future-private',
+    ])
+      expect((await removed.request(origin + endpoint, { headers: { cookie } })).status).toBe(401);
+    expect((await removed.request(origin + '/api/v1/lessons')).status).toBe(200);
+    expect(
+      (await db.prepare('SELECT emailVerified FROM user').first<{ emailVerified: number }>())
+        ?.emailVerified,
+    ).toBe(1);
+  });
+  it('does not create a session from a pending link after preview admission is removed', async () => {
+    await db.prepare(provisionPreviewSql('learner@example.com', 'Learner')).run();
+    let allowed = true;
+    const closed = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      admission: () => allowed,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    await requestLink(closed);
+    allowed = false;
+    const verified = await closed.handler(new Request(deliveries[0]!.url));
+    expect(verified.headers.get('set-cookie') ?? '').not.toContain('session_token=');
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM session').first<{ count: number }>())?.count,
+    ).toBe(0);
+  });
+  it('requires explicit adult confirmation before issuing a link', async () => {
+    const response = await createAccountRoutes(auth).request(
+      origin + '/api/auth/sign-in/magic-link',
+      {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'learner@example.com' }),
+      },
+    );
+    expect(response.status).toBe(422);
+    expect(deliveries).toHaveLength(0);
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM verification').first<{ count: number }>())
+        ?.count,
+    ).toBe(0);
+  });
+  it('defaults to closed signup even with a valid link', async () => {
+    const closed = createAuth({
       database: db,
       secret: 'test-only-secret-with-at-least-32-characters',
       origin,
@@ -31,18 +199,27 @@ describe('passwordless authentication with local D1', () => {
         deliveries.push(message);
       },
     });
-    // Disposable test databases only. Production uses reviewed, versioned migrations.
-    await (await getMigrations(auth.options)).runMigrations();
+    await requestLink(closed);
+    const response = await closed.handler(new Request(deliveries[0]!.url));
+    expect(response.headers.get('location')).toContain('new_user_signup_disabled');
+    expect(
+      (await db.prepare('SELECT COUNT(*) AS count FROM user').first<{ count: number }>())?.count,
+    ).toBe(0);
   });
-  afterEach(async () => {
-    await runtime?.dispose();
-  });
-  const requestLink = (auth: LearntifyAuth, requestOrigin = origin) =>
+  const requestLink = (
+    auth: LearntifyAuth,
+    requestOrigin = origin,
+    email = 'learner@example.com',
+  ) =>
     createAccountRoutes(auth).request(
       new Request(origin + '/api/auth/sign-in/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: requestOrigin },
-        body: JSON.stringify({ email: 'learner@example.com', callbackURL: '/' }),
+        body: JSON.stringify({
+          email,
+          callbackURL: '/',
+          metadata: { adultConfirmed: true },
+        }),
       }),
     );
 
@@ -55,6 +232,12 @@ describe('passwordless authentication with local D1', () => {
     expect(JSON.stringify(stored.results)).not.toContain(rawToken);
     const verified = await auth.handler(new Request(url));
     expect(verified.status).toBe(302);
+    const sessionCookie = verified.headers
+      .getSetCookie()
+      .find((value) => value.includes('session_token='));
+    expect(sessionCookie).toContain('HttpOnly');
+    expect(sessionCookie).toContain('Secure');
+    expect(sessionCookie).toMatch(/Max-Age=604800/i);
     const cookie = verified.headers
       .getSetCookie()
       .map((value) => value.split(';')[0])
@@ -63,6 +246,9 @@ describe('passwordless authentication with local D1', () => {
     const me = await routes.request(origin + '/api/v1/me', { headers: { cookie } });
     expect(me.status).toBe(200);
     expect(Object.keys((await me.json()).data).sort()).toEqual(['id', 'name']);
+    // A later page load uses the persistent cookie without issuing another email.
+    expect((await routes.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(200);
+    expect(deliveries).toHaveLength(1);
     const replay = await auth.handler(new Request(url));
     expect(replay.headers.get('location')).toContain('error=');
     expect(replay.headers.get('set-cookie') ?? '').not.toContain('session_token=');
@@ -81,6 +267,188 @@ describe('passwordless authentication with local D1', () => {
     expect(deliveries).toHaveLength(0);
     expect((await createAccountRoutes(auth).request(origin + '/api/v1/me')).status).toBe(401);
   });
+  it.each(['github', 'google'] as const)(
+    'gates %s OAuth initiation, links explicitly, rejects replay, and signs in with the linked provider',
+    async (providerId) => {
+      auth = createAuth({
+        database: db,
+        origin,
+        secret: 'test-only-secret-with-at-least-32-characters',
+        allowSignUp: true,
+        socialProviders: { [providerId]: { clientId: 'test-client', clientSecret: 'test-secret' } },
+        sendSignInLink: async (message) => {
+          deliveries.push(message);
+        },
+      });
+      const context = await auth.$context;
+      const providers = context.socialProviders;
+      if (!Array.isArray(providers)) throw new Error('Expected static provider configuration');
+      const provider = providers.find((item) => item.id === providerId)!;
+      // Simulate only the provider boundary; state, cookies, account linking and D1 are real.
+      provider.validateAuthorizationCode = async () => ({
+        accessToken: 'test-access-token',
+        scopes: ['user:email'],
+      });
+      let providerEmail = 'learner@example.com';
+      let providerVerified = true;
+      provider.getUserInfo = async () => ({
+        user: { email: providerEmail, emailVerified: providerVerified, name: 'Learner' },
+        data: { id: 123, sub: '123' },
+      });
+      const routes = createAccountRoutes(auth);
+      const start = (
+        action: string,
+        cookie = '',
+        input: unknown = { provider: providerId, locale: 'en' },
+        requestOrigin = origin,
+      ) =>
+        routes.request(origin + '/api/auth/social/' + action, {
+          method: 'POST',
+          headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+      expect(await (await routes.request(origin + '/api/auth/social-providers')).json()).toEqual({
+        providers: [providerId],
+      });
+      expect((await start('link')).status).toBe(401);
+      expect(
+        (
+          await start('sign-in', '', {
+            provider: providerId === 'google' ? 'github' : 'google',
+            locale: 'en',
+          })
+        ).status,
+      ).toBe(404);
+      expect(
+        (await start('sign-in', '', { provider: providerId, locale: 'en', requestSignUp: true }))
+          .status,
+      ).toBe(422);
+      expect(
+        (
+          await start(
+            'sign-in',
+            '',
+            { provider: providerId, locale: 'en' },
+            'https://attacker.test',
+          )
+        ).status,
+      ).toBe(403);
+      await requestLink(auth);
+      const signedIn = await auth.handler(new Request(deliveries[0]!.url));
+      const cookie = signedIn.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      const finish = async (response: Response, sessionCookie = '') => {
+        expect(response.status).toBe(200);
+        const authorization = new URL((await response.json()).url);
+        const state = authorization.searchParams.get('state')!;
+        const stateCookie = response.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; ');
+        const url =
+          origin +
+          '/api/auth/callback/' +
+          providerId +
+          '?code=test-code&state=' +
+          encodeURIComponent(state);
+        const headers = { cookie: [sessionCookie, stateCookie].filter(Boolean).join('; ') };
+        return { response: await routes.request(url, { headers }), url, headers };
+      };
+      const implicit = await finish(await start('sign-in'));
+      expect(implicit.response.headers.get('location')).toContain('error=');
+      expect((await db.prepare('SELECT * FROM account').all()).results).toHaveLength(0);
+      providerEmail = 'other@example.com';
+      expect(
+        (await finish(await start('link', cookie), cookie)).response.headers.get('location'),
+      ).toContain('error=');
+      expect((await finish(await start('sign-in'))).response.headers.get('location')).toContain(
+        'error=',
+      );
+      expect((await db.prepare('SELECT * FROM user').all()).results).toHaveLength(1);
+      providerEmail = 'learner@example.com';
+      providerVerified = false;
+      expect(
+        (await finish(await start('link', cookie), cookie)).response.headers.get('location'),
+      ).toContain('error=');
+      providerVerified = true;
+      const linked = await finish(await start('link', cookie), cookie);
+      expect(linked.response.headers.get('location')).toBe('/en/settings');
+      const stored = await db
+        .prepare('SELECT accessToken FROM account')
+        .first<{ accessToken: string }>();
+      expect(stored?.accessToken).toBeTruthy();
+      expect(stored?.accessToken).not.toBe('test-access-token');
+      expect(
+        await (
+          await routes.request(origin + '/api/auth/social-connections', { headers: { cookie } })
+        ).json(),
+      ).toEqual({ providers: [providerId] });
+      const replay = await routes.request(linked.url, { headers: linked.headers });
+      expect(replay.headers.get('location')).toContain('error=');
+      const login = await finish(await start('sign-in'));
+      expect(login.response.headers.get('location')).toBe('/en/today');
+      expect(login.response.headers.get('set-cookie')).toContain('session_token=');
+      expect(deliveries).toHaveLength(1);
+      await db
+        .prepare('UPDATE session SET createdAt = ?')
+        .bind(Date.now() - 16 * 60 * 1000)
+        .run();
+      expect((await start('link', cookie)).status).toBe(409);
+    },
+  );
+  it('revokes only other sessions and protects passkey enrollment with recent authentication', async () => {
+    const cookies: string[] = [];
+    for (const email of ['learner@example.com', 'learner@example.com', 'other@example.com']) {
+      await requestLink(auth, origin, email);
+      const response = await auth.handler(new Request(deliveries.at(-1)!.url));
+      cookies.push(
+        response.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; '),
+      );
+    }
+    const routes = createAccountRoutes(auth);
+    const revoke = (cookie = '', requestOrigin = origin) =>
+      routes.request(origin + '/api/auth/revoke-other-sessions', {
+        method: 'POST',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    expect((await revoke()).status).toBe(401);
+    expect((await revoke(cookies[0], 'https://attacker.test')).status).toBe(403);
+    expect((await revoke(cookies[0])).status).toBe(200);
+    for (const [index, status] of [
+      [0, 200],
+      [1, 401],
+      [2, 200],
+    ] as const)
+      expect(
+        (await routes.request(origin + '/api/v1/me', { headers: { cookie: cookies[index]! } }))
+          .status,
+      ).toBe(status);
+    const register = (cookie = '') =>
+      routes.request(origin + '/api/auth/passkey/generate-register-options', {
+        headers: { cookie },
+      });
+    expect((await register()).status).toBe(401);
+    expect((await register(cookies[0])).status).toBe(200);
+    expect(
+      (
+        await createAccountRoutes(auth, () => false).request(
+          origin + '/api/auth/passkey/list-user-passkeys',
+          { headers: { cookie: cookies[0]! } },
+        )
+      ).status,
+    ).toBe(401);
+    await db
+      .prepare('UPDATE session SET createdAt = ?')
+      .bind(Date.now() - 16 * 60 * 1000)
+      .run();
+    expect((await register(cookies[0])).status).toBe(409);
+  });
   it('rejects expired links without creating a session', async () => {
     await requestLink(auth);
     await db.prepare('UPDATE verification SET expiresAt = 0').run();
@@ -90,9 +458,54 @@ describe('passwordless authentication with local D1', () => {
       (await db.prepare('SELECT COUNT(*) AS count FROM session').first<{ count: number }>())?.count,
     ).toBe(0);
   });
+  it('persists validated preferences only for the authenticated owner', async () => {
+    const sql = await readFile(
+      new URL('../../migrations/0003_learning_preferences.sql', import.meta.url),
+      'utf8',
+    );
+    for (const statement of sql.split(';').filter((part) => part.trim()))
+      await db.prepare(statement).run();
+    const app = createApp({
+      auth,
+      preferences: new D1PreferencesRepository(db as unknown as PreferencesDatabase),
+    });
+    const url = origin + '/api/v1/preferences';
+    expect((await app.request(url)).status).toBe(401);
+    const signIn = async (email: string) => {
+      await requestLink(auth, origin, email);
+      const response = await auth.handler(new Request(deliveries.at(-1)!.url));
+      return response.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+    };
+    const cookie = await signIn('first@example.test');
+    const input = { locale: 'es', goal: 'projects', weeklyMinutes: 180 };
+    const save = (body: unknown, requestOrigin = origin) =>
+      app.request(url, {
+        method: 'PUT',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    expect((await save(input, 'https://attacker.test')).status).toBe(403);
+    expect((await save({ ...input, ownerId: 'other' })).status).toBe(422);
+    expect((await save({ ...input, weeklyMinutes: 999 })).status).toBe(422);
+    expect((await save(input)).status).toBe(200);
+    const otherCookie = await signIn('second@example.test');
+    expect(
+      await (await app.request(url, { headers: { cookie: otherCookie } })).json(),
+    ).toMatchObject({ data: null });
+    const read = await app.request(url, { headers: { cookie } });
+    expect(await read.json()).toMatchObject({ data: input });
+    expect(read.headers.get('Cache-Control')).toBe('no-store');
+    await db.prepare('DELETE FROM user WHERE email = ?').bind('first@example.test').run();
+    expect(await db.prepare('SELECT * FROM learning_preferences').all()).toMatchObject({
+      results: [],
+    });
+  });
   it('derives draft ownership from the session and protects writes and revisions', async () => {
     const sql = await readFile(
-      new URL('../../../../adapters/drafts/migrations/0001_draft_validation.sql', import.meta.url),
+      new URL('../../migrations/0002_lesson_drafts.sql', import.meta.url),
       'utf8',
     );
     for (const statement of sql.split(';').filter((part) => part.trim()))
@@ -105,11 +518,33 @@ describe('passwordless authentication with local D1', () => {
       .join('; ');
     const user = await db.prepare('SELECT id FROM user').first<{ id: string }>();
     await db
-      .prepare('INSERT INTO drafts VALUES (?, ?, ?, 1)')
+      .prepare("INSERT INTO drafts VALUES (?, ?, 'validation', 1, ?, 1)")
       .bind('mine', user!.id, 'original')
       .run();
-    await db.prepare("INSERT INTO drafts VALUES ('theirs', 'someone-else', 'private', 1)").run();
+    await db
+      .prepare(
+        "INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('someone-else', 'Other', 'other@example.test', 1, 0, 0)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO drafts VALUES ('theirs', 'someone-else', 'validation', 1, 'private', 1)",
+      )
+      .run();
     const app = createApp({ auth, drafts: new D1DraftRepository(db as unknown as DraftDatabase) });
+    const open = (lessonId: string, lessonVersion: number) =>
+      app.request(origin + '/api/v1/drafts/open', {
+        method: 'POST',
+        headers: { cookie, Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId, lessonVersion }),
+      });
+    const opened = await open('values-and-expressions', 1);
+    expect(opened.status).toBe(200);
+    expect((await (await open('values-and-expressions', 1)).json()).data.id).toBe(
+      (await opened.json()).data.id,
+    );
+    expect((await open('missing', 1)).status).toBe(404);
+    expect((await open('values-and-expressions', 999)).status).toBe(409);
     expect((await app.request(origin + '/api/v1/drafts/mine')).status).toBe(401);
     expect(
       (await app.request(origin + '/api/v1/drafts/theirs', { headers: { cookie } })).status,
@@ -132,5 +567,96 @@ describe('passwordless authentication with local D1', () => {
     const read = await app.request(origin + '/api/v1/drafts/mine', { headers: { cookie } });
     expect(await read.json()).toMatchObject({ data: { content: 'updated', revision: 2 } });
     expect(read.headers.get('Cache-Control')).toBe('no-store');
+  });
+  it('requires confirmation and fresh authentication, then deletes only the current account and its owned data', async () => {
+    for (const file of ['0002_lesson_drafts.sql', '0003_learning_preferences.sql']) {
+      const sql = await readFile(new URL('../../migrations/' + file, import.meta.url), 'utf8');
+      for (const statement of sql.split(';').filter((part) => part.trim()))
+        await db.prepare(statement).run();
+    }
+    expect(
+      (
+        await createAccountRoutes(auth).request(origin + '/api/auth/delete-user', {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirmation: 'DELETE' }),
+        })
+      ).status,
+    ).toBe(404);
+    auth = createAuth({
+      database: db,
+      secret: 'test-only-secret-with-at-least-32-characters',
+      origin,
+      allowSignUp: true,
+      allowDeletion: true,
+      sendSignInLink: async (message) => {
+        deliveries.push(message);
+      },
+    });
+    const routes = createAccountRoutes(auth);
+    const remove = (
+      cookie = '',
+      input: unknown = { confirmation: 'DELETE' },
+      requestOrigin = origin,
+    ) =>
+      routes.request(origin + '/api/auth/delete-user', {
+        method: 'POST',
+        headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+    expect((await remove()).status).toBe(401);
+    await requestLink(auth);
+    const verified = await auth.handler(new Request(deliveries[0]!.url));
+    const cookie = verified.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const user = await db.prepare('SELECT id FROM user').first<{ id: string }>();
+    const drafts = new D1DraftRepository(db as unknown as DraftDatabase);
+    const draft = await drafts.open(user!.id, 'values-and-expressions', 1);
+    await drafts.save({
+      id: draft.id,
+      ownerId: user!.id,
+      expectedRevision: 1,
+      content: 'Private notes',
+      operationId: crypto.randomUUID(),
+    });
+    await new D1PreferencesRepository(db as unknown as PreferencesDatabase).save(user!.id, {
+      locale: 'en',
+      goal: 'foundations',
+      weeklyMinutes: null,
+    });
+    await db
+      .prepare(
+        "INSERT INTO user (id,name,email,emailVerified,createdAt,updatedAt) VALUES ('other','Other','other@example.test',1,0,0)",
+      )
+      .run();
+    expect((await remove(cookie, { confirmation: 'DELETE' }, 'https://attacker.test')).status).toBe(
+      403,
+    );
+    expect((await remove(cookie, { confirmation: 'DELETE', userId: 'other' })).status).toBe(422);
+    expect((await remove(cookie, {})).status).toBe(422);
+    await db
+      .prepare('UPDATE session SET createdAt = ? WHERE userId = ?')
+      .bind(Date.now() - 16 * 60 * 1000, user!.id)
+      .run();
+    expect((await remove(cookie)).status).toBe(409);
+    expect(await drafts.get(draft.id, user!.id)).toBeDefined();
+    await db
+      .prepare('UPDATE session SET createdAt = ? WHERE userId = ?')
+      .bind(Date.now(), user!.id)
+      .run();
+    const deleted = await remove(cookie);
+    expect(deleted.status).toBe(200);
+    expect(await deleted.json()).toMatchObject({ success: true, message: 'User deleted' });
+    expect((await routes.request(origin + '/api/v1/me', { headers: { cookie } })).status).toBe(401);
+    expect(await drafts.get(draft.id, user!.id)).toBeUndefined();
+    for (const table of ['session', 'draft_operations', 'learning_preferences']) {
+      expect(
+        (await db.prepare('SELECT COUNT(*) AS count FROM ' + table).first<{ count: number }>())
+          ?.count,
+      ).toBe(0);
+    }
+    expect((await db.prepare('SELECT id FROM user').all()).results).toEqual([{ id: 'other' }]);
   });
 });

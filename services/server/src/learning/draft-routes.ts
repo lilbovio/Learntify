@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { saveDraftSchema } from '@learntify/api-contracts';
+import { openDraftSchema, saveDraftSchema } from '@learntify/api-contracts';
+import { getLesson } from '@learntify/curriculum';
 import type { DraftRepository } from '@learntify/learning';
 import type { LearntifyAuth } from '../auth/create-auth';
 import { errorBody, meta } from '../http/envelope';
@@ -23,6 +24,25 @@ export function createDraftRoutes(auth: LearntifyAuth, drafts: DraftRepository) 
       onError: (c) => c.json(errorBody(c, 'PAYLOAD_TOO_LARGE', 'Draft is too large.'), 413),
     }),
   );
+  routes.post('/api/v1/drafts/open', async (c) => {
+    let input: unknown;
+    try {
+      input = await c.req.json();
+    } catch {
+      return c.json(errorBody(c, 'INVALID_JSON', 'Expected JSON.'), 400);
+    }
+    const parsed = openDraftSchema.safeParse(input);
+    if (!parsed.success) return c.json(errorBody(c, 'INVALID_INPUT', 'Invalid lesson.'), 422);
+    const lesson = getLesson(parsed.data.lessonId, 'en');
+    if (!lesson) return c.json(errorBody(c, 'NOT_FOUND', 'Lesson not found.'), 404);
+    if (lesson.version !== parsed.data.lessonVersion)
+      return c.json(errorBody(c, 'VERSION_CONFLICT', 'Reload the lesson.'), 409);
+    const draft = await drafts.open(c.get('ownerId'), lesson.id, lesson.version);
+    return c.json({
+      data: { id: draft.id, content: draft.content, revision: draft.revision },
+      meta: meta(c),
+    });
+  });
   routes.get('/api/v1/drafts/:id', async (c) => {
     const draft = await drafts.get(c.req.param('id'), c.get('ownerId'));
     if (!draft) return c.json(errorBody(c, 'NOT_FOUND', 'Draft not found.'), 404);

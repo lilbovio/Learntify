@@ -8,3 +8,5 @@ coverage/
 playwright-report/
 test-results/
 .pnpm-store/
+.learntify-private/
+services/server/external/wrangler.jsonc

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "learntify-accounts-local",
+  "main": "src/local.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "send_metrics": false,
+  "observability": { "enabled": false },
+  "vars": { "LOCAL_ACCOUNTS": "true", "APP_ORIGIN": "http://localhost:5174" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "learntify-local",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations",
+    },
+  ],
+}
