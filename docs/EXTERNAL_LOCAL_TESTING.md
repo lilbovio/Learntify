@@ -46,7 +46,7 @@ The profile is explicitly restricted to HTTP loopback, one recipient, and the Re
 ## Other services
 
 - GitHub already hosts the repository and CI. No additional source-hosting service is needed.
-- Google and GitHub OAuth clients can use local callbacks, but their app integration is not implemented yet. They are not validated by this email test; add them as a separate tested increment.
+- Google and GitHub integration now supports explicit account linking and sign-in. Configure both using [OAuth local testing](OAUTH_LOCAL_TESTING.md); live provider testing remains separate from email verification.
 - Turnstile integration is still pending. It is needed before public signup, not to exercise the current single-account preview.
 - Durable Objects are deferred with moderated chat. MongoDB, Redis and paid auth services are not needed.
 - Domain purchase and verification remain deferred. Do not enable delivery to other recipients using the testing sender.

@@ -1,5 +1,8 @@
 import {
   apiErrorSchema,
+  socialRequestSchema,
+  socialProvidersResponseSchema,
+  socialRedirectSchema,
   revokeSessionsResponseSchema,
   deleteAccountSchema,
   deleteAccountResponseSchema,
@@ -38,6 +41,33 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async socialProviders() {
+      return socialProvidersResponseSchema.parse(
+        await read(await fetcher('/api/auth/social-providers')),
+      ).providers;
+    },
+    async socialConnections() {
+      return socialProvidersResponseSchema.parse(
+        await read(await fetcher('/api/auth/social-connections')),
+      ).providers;
+    },
+    async startSocial(action: 'sign-in' | 'link', provider: 'google' | 'github', locale: Locale) {
+      const result = socialRedirectSchema.parse(
+        await read(
+          await fetcher('/api/auth/social/' + action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(socialRequestSchema.parse({ provider, locale })),
+          }),
+        ),
+      );
+      const url = new URL(result.url);
+      const expected = provider === 'google' ? 'accounts.google.com' : 'github.com';
+      if (url.protocol !== 'https:' || url.hostname !== expected || url.username || url.password)
+        throw new ApiError('INVALID_RESPONSE', 502);
+      return result.url;
+    },
     async revokeOtherSessions() {
       return revokeSessionsResponseSchema.parse(
         await read(

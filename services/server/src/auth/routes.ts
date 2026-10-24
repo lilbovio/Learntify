@@ -4,6 +4,7 @@ import { sensitiveSessionAgeSeconds, type LearntifyAuth } from './create-auth';
 import { errorBody, meta } from '../http/envelope';
 import { signInRequestSchema, deleteAccountSchema } from '@learntify/api-contracts';
 import type { AccountAdmission } from './preview-admission';
+import { createSocialRoutes } from './social-routes';
 
 /** Mount only after deployment configuration and signup safeguards are complete. */
 export function createAccountRoutes(auth: LearntifyAuth, admission?: AccountAdmission) {
@@ -38,6 +39,7 @@ export function createAccountRoutes(auth: LearntifyAuth, admission?: AccountAdmi
     if (admission && !admission(parsed.data.email)) return c.json({ status: true });
     return auth.handler(c.req.raw);
   });
+  routes.route('/', createSocialRoutes(auth, admission));
   // Expose only the account operations implemented by the client.
   const passkeyRegistrationPaths = new Set([
     '/api/auth/passkey/generate-register-options',

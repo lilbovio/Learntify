@@ -1,4 +1,10 @@
 import { z } from 'zod';
+export const socialProviderSchema = z.enum(['google', 'github']);
+export const socialRequestSchema = z
+  .object({ provider: socialProviderSchema, locale: z.enum(['en', 'es']) })
+  .strict();
+export const socialProvidersResponseSchema = z.object({ providers: z.array(socialProviderSchema) });
+export const socialRedirectSchema = z.object({ url: z.string().url() });
 
 export const signInRequestSchema = z
   .object({

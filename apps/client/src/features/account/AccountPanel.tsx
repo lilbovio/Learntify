@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
 import { accountCopy } from './copy';
+import { SocialButtons } from './SocialButtons';
 import { passkeyAuth, supportsPasskeys } from './passkeys';
 
 const api = createApiClient();
@@ -144,6 +145,7 @@ export function AccountPanel({
           ) : (
             <>
               <p>{text.description}</p>
+              <SocialButtons locale={locale} />
               {supportsPasskeys() && (
                 <button
                   type="button"

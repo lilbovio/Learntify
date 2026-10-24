@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated October 23, 2026.
+Updated October 24, 2026.
 
 The owner has authorized local implementation, fixes, testing, and CI setup. This supersedes the planning-only restriction in older documents. Production deployment, purchases, external messaging, and paid infrastructure are not authorized.
 
@@ -52,4 +52,8 @@ Provider credentials and domain/email verification are future prerequisites for 
 
 ## Passkeys and session controls
 
-Passkey enrollment, sign-in and removal are implemented with Better Auth 1.7.12. Enrollment/removal require a verified account and a sign-in within 15 minutes. Origin, challenge and device user verification are enforced; preview admission still gates session creation. Settings can revoke other sessions while retaining the current one. Browser tests use a virtual authenticator; real OS enrollment remains a user action. Local account URLs now use localhost for WebAuthn. See [passkey setup](PASSKEYS.md). Google/GitHub OAuth and Turnstile remain pending.
+Passkey enrollment, sign-in and removal are implemented with Better Auth 1.7.12. Enrollment/removal require a verified account and a sign-in within 15 minutes. Origin, challenge and device user verification are enforced; preview admission still gates session creation. Settings can revoke other sessions while retaining the current one. Browser tests use a virtual authenticator; the owner also confirmed successful real-device enrollment and sign-in. Local account URLs now use localhost for WebAuthn. See [passkey setup](PASSKEYS.md). Google/GitHub OAuth code is implemented with explicit linking; live provider credentials and verification remain pending. Turnstile remains pending.
+
+## Google/GitHub integration
+
+Optional server-only credentials enable provider buttons. Accounts must first sign in by email/passkey, then explicitly link the same verified email from settings within 15 minutes. Implicit linking and OAuth signup remain disabled. Requests cannot override scopes, redirects, ID tokens or signup policy. Access/refresh tokens are encrypted at rest. Tests simulate provider responses; real Google/GitHub consent and callback validation are still pending credentials. See [OAuth local testing](OAUTH_LOCAL_TESTING.md).

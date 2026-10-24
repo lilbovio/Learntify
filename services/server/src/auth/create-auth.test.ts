@@ -267,6 +267,137 @@ describe('passwordless authentication with local D1', () => {
     expect(deliveries).toHaveLength(0);
     expect((await createAccountRoutes(auth).request(origin + '/api/v1/me')).status).toBe(401);
   });
+  it.each(['github', 'google'] as const)(
+    'gates %s OAuth initiation, links explicitly, rejects replay, and signs in with the linked provider',
+    async (providerId) => {
+      auth = createAuth({
+        database: db,
+        origin,
+        secret: 'test-only-secret-with-at-least-32-characters',
+        allowSignUp: true,
+        socialProviders: { [providerId]: { clientId: 'test-client', clientSecret: 'test-secret' } },
+        sendSignInLink: async (message) => {
+          deliveries.push(message);
+        },
+      });
+      const context = await auth.$context;
+      const providers = context.socialProviders;
+      if (!Array.isArray(providers)) throw new Error('Expected static provider configuration');
+      const provider = providers.find((item) => item.id === providerId)!;
+      // Simulate only the provider boundary; state, cookies, account linking and D1 are real.
+      provider.validateAuthorizationCode = async () => ({
+        accessToken: 'test-access-token',
+        scopes: ['user:email'],
+      });
+      let providerEmail = 'learner@example.com';
+      let providerVerified = true;
+      provider.getUserInfo = async () => ({
+        user: { email: providerEmail, emailVerified: providerVerified, name: 'Learner' },
+        data: { id: 123, sub: '123' },
+      });
+      const routes = createAccountRoutes(auth);
+      const start = (
+        action: string,
+        cookie = '',
+        input: unknown = { provider: providerId, locale: 'en' },
+        requestOrigin = origin,
+      ) =>
+        routes.request(origin + '/api/auth/social/' + action, {
+          method: 'POST',
+          headers: { cookie, Origin: requestOrigin, 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+      expect(await (await routes.request(origin + '/api/auth/social-providers')).json()).toEqual({
+        providers: [providerId],
+      });
+      expect((await start('link')).status).toBe(401);
+      expect(
+        (
+          await start('sign-in', '', {
+            provider: providerId === 'google' ? 'github' : 'google',
+            locale: 'en',
+          })
+        ).status,
+      ).toBe(404);
+      expect(
+        (await start('sign-in', '', { provider: providerId, locale: 'en', requestSignUp: true }))
+          .status,
+      ).toBe(422);
+      expect(
+        (
+          await start(
+            'sign-in',
+            '',
+            { provider: providerId, locale: 'en' },
+            'https://attacker.test',
+          )
+        ).status,
+      ).toBe(403);
+      await requestLink(auth);
+      const signedIn = await auth.handler(new Request(deliveries[0]!.url));
+      const cookie = signedIn.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      const finish = async (response: Response, sessionCookie = '') => {
+        expect(response.status).toBe(200);
+        const authorization = new URL((await response.json()).url);
+        const state = authorization.searchParams.get('state')!;
+        const stateCookie = response.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; ');
+        const url =
+          origin +
+          '/api/auth/callback/' +
+          providerId +
+          '?code=test-code&state=' +
+          encodeURIComponent(state);
+        const headers = { cookie: [sessionCookie, stateCookie].filter(Boolean).join('; ') };
+        return { response: await routes.request(url, { headers }), url, headers };
+      };
+      const implicit = await finish(await start('sign-in'));
+      expect(implicit.response.headers.get('location')).toContain('error=');
+      expect((await db.prepare('SELECT * FROM account').all()).results).toHaveLength(0);
+      providerEmail = 'other@example.com';
+      expect(
+        (await finish(await start('link', cookie), cookie)).response.headers.get('location'),
+      ).toContain('error=');
+      expect((await finish(await start('sign-in'))).response.headers.get('location')).toContain(
+        'error=',
+      );
+      expect((await db.prepare('SELECT * FROM user').all()).results).toHaveLength(1);
+      providerEmail = 'learner@example.com';
+      providerVerified = false;
+      expect(
+        (await finish(await start('link', cookie), cookie)).response.headers.get('location'),
+      ).toContain('error=');
+      providerVerified = true;
+      const linked = await finish(await start('link', cookie), cookie);
+      expect(linked.response.headers.get('location')).toBe('/en/settings');
+      const stored = await db
+        .prepare('SELECT accessToken FROM account')
+        .first<{ accessToken: string }>();
+      expect(stored?.accessToken).toBeTruthy();
+      expect(stored?.accessToken).not.toBe('test-access-token');
+      expect(
+        await (
+          await routes.request(origin + '/api/auth/social-connections', { headers: { cookie } })
+        ).json(),
+      ).toEqual({ providers: [providerId] });
+      const replay = await routes.request(linked.url, { headers: linked.headers });
+      expect(replay.headers.get('location')).toContain('error=');
+      const login = await finish(await start('sign-in'));
+      expect(login.response.headers.get('location')).toBe('/en/today');
+      expect(login.response.headers.get('set-cookie')).toContain('session_token=');
+      expect(deliveries).toHaveLength(1);
+      await db
+        .prepare('UPDATE session SET createdAt = ?')
+        .bind(Date.now() - 16 * 60 * 1000)
+        .run();
+      expect((await start('link', cookie)).status).toBe(409);
+    },
+  );
   it('revokes only other sessions and protects passkey enrollment with recent authentication', async () => {
     const cookies: string[] = [];
     for (const email of ['learner@example.com', 'learner@example.com', 'other@example.com']) {

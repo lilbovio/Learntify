@@ -24,6 +24,7 @@ export async function serveAccounts(
   const admission = previewAdmission(configuration.previewEmails);
   const auth = createAuth({
     admission,
+    socialProviders: configuration.socialProviders,
     database: configuration.database,
     origin: configuration.origin,
     secret: configuration.secret,

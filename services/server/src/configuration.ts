@@ -1,5 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import { parsePreviewEmails } from './auth/preview-admission';
+import { readSocialCredentials, type SocialCredentials } from './auth/social';
 
 export interface ProductionBindings {
   ACCOUNT_MODE?: string;
@@ -8,6 +9,10 @@ export interface ProductionBindings {
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
   PREVIEW_EMAILS?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
   DB?: D1Database;
 }
 
@@ -22,6 +27,7 @@ export type AccountConfiguration =
       apiKey: string;
       from: string;
       previewEmails: ReadonlySet<string>;
+      socialProviders: SocialCredentials;
     };
 
 /** Reports field names only. Never include values in diagnostics or HTTP responses. */
@@ -34,6 +40,8 @@ export function readAccountConfiguration(
   if (env.ACCOUNT_MODE !== 'existing-accounts')
     return { kind: 'invalid', fields: ['ACCOUNT_MODE'] };
   const fields: string[] = [];
+  const social = readSocialCredentials({ ...env });
+  fields.push(...social.fields);
   const previewEmails = parsePreviewEmails(env.PREVIEW_EMAILS);
   if (!previewEmails) fields.push('PREVIEW_EMAILS');
   try {
@@ -72,5 +80,6 @@ export function readAccountConfiguration(
     apiKey: env.RESEND_API_KEY!,
     from: env.EMAIL_FROM!,
     previewEmails: previewEmails!,
+    socialProviders: social.credentials,
   };
 }

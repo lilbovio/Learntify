@@ -3,6 +3,7 @@ import { magicLink } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
 import type { D1Database } from '@cloudflare/workers-types';
 import type { AccountAdmission } from './preview-admission';
+import type { SocialCredentials } from './social';
 
 export const sensitiveSessionAgeSeconds = 15 * 60;
 
@@ -13,6 +14,7 @@ export interface AuthConfiguration {
   allowSignUp?: boolean;
   allowDeletion?: boolean;
   admission?: AccountAdmission;
+  socialProviders?: SocialCredentials;
   /** The delivery adapter must enforce the global mail budget before sending. */
   sendSignInLink: (message: { email: string; url: string }) => Promise<void>;
 }
@@ -35,7 +37,21 @@ export function createAuth(configuration: AuthConfiguration) {
     basePath: '/api/auth',
     trustedOrigins: [configuration.origin],
     emailAndPassword: { enabled: false },
-    account: { accountLinking: { enabled: false } },
+    socialProviders: Object.fromEntries(
+      Object.entries(configuration.socialProviders ?? {}).map(([provider, credentials]) => [
+        provider,
+        { ...credentials, disableSignUp: true, disableImplicitSignUp: true },
+      ]),
+    ),
+    account: {
+      encryptOAuthTokens: true,
+      accountLinking: {
+        enabled: true,
+        disableImplicitLinking: true,
+        allowDifferentEmails: false,
+        trustedProviders: [],
+      },
+    },
     session: {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24,
@@ -45,6 +61,7 @@ export function createAuth(configuration: AuthConfiguration) {
     rateLimit: { enabled: true, storage: 'database', window: 60, max: 30 },
     advanced: { useSecureCookies: origin.protocol === 'https:' },
     logger: { disabled: true },
+    onAPIError: { errorURL: configuration.origin + '/en/auth' },
     databaseHooks: {
       session: {
         create: {

@@ -5,6 +5,7 @@ import { PageFrame } from '../../shared/PageFrame';
 import { settingsCopy } from './settings-copy';
 import { accountCopy } from './copy';
 import { PasskeySettings } from './PasskeySettings';
+import { SocialButtons } from './SocialButtons';
 
 const api = createApiClient();
 export function SettingsPage({ locale }: { locale: Locale }) {
@@ -81,6 +82,14 @@ export function SettingsPage({ locale }: { locale: Locale }) {
           </button>
           <p>{accountCopy[locale].sessionHelp}</p>
           <PasskeySettings locale={locale} />
+          <SocialButtons locale={locale} link />
+          {new URL(window.location.href).searchParams.has('socialError') && (
+            <p role="alert">
+              {locale === 'en'
+                ? 'Could not connect the provider. Use the same verified email and try again.'
+                : 'No se pudo conectar el proveedor. Usa el mismo correo verificado e inténtalo de nuevo.'}
+            </p>
+          )}
           <section className="clay-card" aria-labelledby="sessions-title">
             <h2 id="sessions-title">{text.otherSessions}</h2>
             <p>{text.otherSessionsHelp}</p>
