@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Lesson, LessonListItem, Locale } from '@learntify/api-contracts';
 import { readRoute, lessonPath } from '../shared/routes';
@@ -23,6 +23,22 @@ export function LessonPage() {
   const [catalogFailed, setCatalogFailed] = useState(false);
   const [reload, setReload] = useState(0);
   const text = copy[locale];
+  const lessonRegion = useRef<HTMLElement>(null);
+  const navigating = useRef(false);
+  const currentIndex = lessons.findIndex((item) => item.id === currentLessonId);
+  function selectLesson(id: string) {
+    if (id !== currentLessonId && (!notesDirty || window.confirm(draftCopy[locale].leave))) {
+      navigating.current = true;
+      setCurrentLessonId(id);
+    }
+  }
+  useEffect(() => {
+    if (!loading && navigating.current) {
+      navigating.current = false;
+      lessonRegion.current?.focus({ preventScroll: true });
+      lessonRegion.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [loading]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,18 +101,21 @@ export function LessonPage() {
       </header>
       <main>
         <AccountPanel locale={locale} onAccountChange={setAccountId} unsavedNotes={notesDirty} />
-        <section className="intro" aria-labelledby="welcome">
+        <section className="lesson-intro" aria-labelledby="welcome">
           <div>
-            <p className="eyebrow">{text.eyebrow}</p>
-            <h1 id="welcome">{text.heading}</h1>
-            <p className="lede">{text.intro}</p>
-          </div>
-          <div className="expression-object" aria-hidden="true">
-            <span>3</span>
-            <b>+</b>
-            <span>2</span>
-            <b>=</b>
-            <span className="result">5</span>
+            <p className="eyebrow">
+              {locale === 'en' ? 'JavaScript / Foundations' : 'JavaScript / Fundamentos'}
+            </p>
+            <h1 id="welcome">
+              {locale === 'en'
+                ? 'One idea. Put into practice.'
+                : 'Una idea. Llévala a la práctica.'}
+            </h1>
+            <p className="lede">
+              {locale === 'en'
+                ? 'Read, predict, experiment. Take the time you need.'
+                : 'Lee, predice, experimenta. Tómate el tiempo que necesites.'}
+            </p>
           </div>
         </section>
         <div className="workspace">
@@ -108,10 +127,7 @@ export function LessonPage() {
                   className="lesson-link"
                   key={item.id}
                   aria-current={currentLessonId === item.id ? 'step' : undefined}
-                  onClick={() => {
-                    if (!notesDirty || window.confirm(draftCopy[locale].leave))
-                      setCurrentLessonId(item.id);
-                  }}
+                  onClick={() => selectLesson(item.id)}
                 >
                   <span className="step-number">{String(index + 1).padStart(2, '0')}</span>
                   <span>{item.title}</span>
@@ -127,7 +143,13 @@ export function LessonPage() {
             <p>{text.about}</p>
             <span className="free-label">{text.availability}</span>
           </aside>
-          <article id="lesson" tabIndex={-1} className="lesson" aria-busy={loading}>
+          <article
+            ref={lessonRegion}
+            id="lesson"
+            tabIndex={-1}
+            className="lesson"
+            aria-busy={loading}
+          >
             {loading && <p role="status">{text.loading}</p>}
             {loadFailed && (
               <div role="alert">
@@ -153,6 +175,28 @@ export function LessonPage() {
                     onDirty={setNotesDirty}
                   />
                 )}
+                <nav
+                  className="lesson-pagination"
+                  aria-label={locale === 'en' ? 'Continue learning' : 'Continuar aprendiendo'}
+                >
+                  {currentIndex > 0 && (
+                    <button
+                      className="secondary-button"
+                      onClick={() => selectLesson(lessons[currentIndex - 1]!.id)}
+                    >
+                      {locale === 'en' ? 'Previous lesson' : 'Lección anterior'}
+                    </button>
+                  )}
+                  {currentIndex >= 0 && currentIndex < lessons.length - 1 ? (
+                    <button onClick={() => selectLesson(lessons[currentIndex + 1]!.id)}>
+                      {locale === 'en' ? 'Next lesson' : 'Siguiente lección'}
+                    </button>
+                  ) : (
+                    <a href={'/' + locale + '/today'}>
+                      {locale === 'en' ? 'Return to your practice' : 'Volver a tu práctica'}
+                    </a>
+                  )}
+                </nav>
               </div>
             )}
           </article>

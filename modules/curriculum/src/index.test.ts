@@ -1,7 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { checkPrediction, firstLessonId, getLesson } from './index';
+import { checkPrediction, firstLessonId, getLesson, listLessons } from './index';
 
 describe('published starter lesson', () => {
+  it('publishes the same ordered curriculum and exercise targets in both languages', () => {
+    const english = listLessons('en');
+    expect(english.map((lesson) => lesson.id)).toEqual([
+      'values-and-expressions',
+      'storing-values',
+      'working-with-text',
+      'comparing-values',
+      'making-decisions',
+    ]);
+    expect(listLessons('es').map((lesson) => lesson.id)).toEqual(
+      english.map((lesson) => lesson.id),
+    );
+    for (const entry of english) {
+      const en = getLesson(entry.id, 'en')!;
+      const es = getLesson(entry.id, 'es')!;
+      expect(es.coding.expectedOutput).toEqual(en.coding.expectedOutput);
+      expect(es.title).not.toBe(en.title);
+      expect(
+        en.exercise.choices.some((choice) => {
+          const result = checkPrediction(entry.id, 'en', entry.version, choice.id);
+          return result.kind === 'feedback' && result.feedback.correct;
+        }),
+      ).toBe(true);
+    }
+  });
   it('preserves exercise identity across languages', () => {
     const english = getLesson(firstLessonId, 'en')!;
     const spanish = getLesson(firstLessonId, 'es')!;

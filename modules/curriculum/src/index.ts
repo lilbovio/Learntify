@@ -1,6 +1,7 @@
+import { nextFoundations } from './next-foundations';
 export type ContentLocale = 'en' | 'es';
 
-type LessonData = {
+export type LessonData = {
   id: string;
   version: number;
   title: { en: string; es: string };
@@ -125,6 +126,7 @@ const lessons: LessonData[] = [
       es: '¿Qué pasa si hacemos score = 20 y lo mostramos de nuevo? Predice el resultado.',
     },
   },
+  ...nextFoundations,
 ];
 
 export const firstLessonId = lessons[0]!.id;

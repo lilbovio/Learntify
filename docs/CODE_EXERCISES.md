@@ -1,6 +1,6 @@
 # Code exercises
 
-The first two bilingual lessons now include editable synchronous JavaScript exercises with expected output and immediate feedback. Code is saved by lesson/version in this browser only, shared by anyone using that browser profile. It is not yet synchronized to the account. Reset restores the lesson example.
+The five bilingual foundation lessons include editable synchronous JavaScript exercises with expected output and immediate feedback. Code is saved by lesson/version in this browser only, shared by anyone using that browser profile. It is not yet synchronized to the account. Reset restores the lesson example.
 
 ## Execution boundary
 

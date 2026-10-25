@@ -1,6 +1,14 @@
 # Implementation status
 
-Updated October 24, 2026.
+Updated October 25, 2026.
+
+## Delivery stage
+
+Current stage: functional alpha for restricted testing, not a production release candidate. The complete account → lesson → execute → save attempt → review flow is implemented. Five bilingual introductory lessons cover values, variables, strings, comparisons and conditionals. This remains a small beginning of the intended curriculum.
+
+The next milestone is a private beta: extend foundations through loops, functions, arrays and objects; improve feedback and accessibility; finish code-draft synchronization and attempt-history access; and validate the experience with learners. Production readiness additionally needs tested backup/restore and deletion replay, monitoring and incident procedures, global capacity controls, deployed environment verification and production email/domain configuration. Community launch still requires moderators. Projects, data structures, algorithms and interview preparation remain substantial product work.
+
+The latest UI pass reduces the lesson hero and signed-in account panel, softens card shadows, adds previous/next navigation with focus management, and checks desktop/mobile layouts. New lesson journeys execute solutions and validate bilingual navigation. This is incremental polish, not a claim that every product screen is complete.
 
 The owner has authorized local implementation, fixes, testing, and CI setup. This supersedes the planning-only restriction in older documents. Production deployment, purchases, external messaging, and paid infrastructure are not authorized.
 
@@ -34,7 +42,7 @@ Remaining screens include attempt-history browsing, advanced assessment, project
 
 ## Runnable exercises
 
-Both bilingual lessons include a code editor, expected output, Run/Stop/Reset controls and immediate output feedback. A dedicated Worker runs a fresh QuickJS WebAssembly context with execution, stack, memory and output limits. Browser globals are unavailable to learner code. Code drafts persist by lesson/version in browser storage; explicit attempt snapshots now save to the account in D1. This is output practice, not verified mastery. Development and compiled-production browser journeys cover isolation, runaway loops, syntax errors, output limits and recovery. See [code exercise boundaries](CODE_EXERCISES.md).
+All five bilingual lessons include a code editor, expected output, Run/Stop/Reset controls and immediate output feedback. A dedicated Worker runs a fresh QuickJS WebAssembly context with execution, stack, memory and output limits. Browser globals are unavailable to learner code. Code drafts persist by lesson/version in browser storage; explicit attempt snapshots now save to the account in D1. This is output practice, not verified mastery. Development and compiled-production browser journeys cover isolation, runaway loops, syntax errors, output limits and recovery. See [code exercise boundaries](CODE_EXERCISES.md).
 
 Practice saves validate session ownership, origin, expected account, current lesson version and bounded input. Idempotent IDs prevent duplicate attempts after lost acknowledgements; a rolling 100-save daily cap limits writes per account. Today shows current-version practice counts and review reminders (immediate after mismatch, 24 hours after a match), with client-reported provenance. Migration 0006 is applied to local test storage and the dedicated external-test D1 database. D1/API/browser tests cover isolation, quota races, retries, deletion cascades, language switching and due-queue updates. See [practice progress](PRACTICE_PROGRESS.md).
 
