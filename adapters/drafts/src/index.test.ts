@@ -40,6 +40,24 @@ describe('draft persistence in the local Workers/D1 runtime', () => {
     expect((await repository.open('bob', 'lesson', 1)).id).not.toBe(first.id);
     expect((await repository.open('alice', 'lesson', 2)).id).not.toBe(first.id);
   });
+  it('keeps code and notes separate, initializes code once, and preserves intentionally empty code', async () => {
+    const code = await repository.open('alice', 'lesson', 1, 'code', 'console.log(3)');
+    const notes = await repository.open('alice', 'lesson', 1);
+    expect(code.id).not.toBe(notes.id);
+    expect(notes.content).toBe('');
+    expect(code.content).toBe('console.log(3)');
+    await repository.save({
+      id: code.id,
+      ownerId: 'alice',
+      content: '',
+      expectedRevision: 1,
+      operationId: 'clear',
+    });
+    expect((await repository.open('alice', 'lesson', 1, 'code', 'new starter')).content).toBe('');
+    expect((await repository.open('bob', 'lesson', 1, 'code', 'bob starter')).content).toBe(
+      'bob starter',
+    );
+  });
 
   it('does not leak or update a different owner’s draft', async () => {
     expect(await repository.get('draft-1', 'bob')).toBeUndefined();

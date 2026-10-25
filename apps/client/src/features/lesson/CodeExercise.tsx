@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lesson, Locale } from '@learntify/api-contracts';
 import { SaveAttempt } from './SaveAttempt';
+import { useCodeDraft } from '../draft/useCodeDraft';
+import { CodeDraftStatus } from '../draft/CodeDraftStatus';
+import { AttemptHistory } from './AttemptHistory';
 
 const copy = {
   en: {
@@ -43,21 +46,19 @@ export function CodeExercise({
   lesson,
   locale,
   accountId,
+  accountReady,
+  onCodeDirty,
 }: {
   lesson: Lesson;
   locale: Locale;
   accountId: string | null;
+  accountReady: boolean;
+  onCodeDirty: (value: boolean) => void;
 }) {
   const text = copy[locale];
-  const key = `learntify:code:${lesson.id}:${lesson.version}`;
-  const [code, setCode] = useState(() => {
-    try {
-      return localStorage.getItem(key)?.slice(0, 16000) ?? lesson.example;
-    } catch {
-      return lesson.example;
-    }
-  });
-  const [saved, setSaved] = useState<boolean>();
+  const draft = useCodeDraft(lesson, accountId, onCodeDirty);
+  const code = draft.code;
+  const editable = accountReady && draft.ready;
   const [running, setRunning] = useState(false);
   const [attemptId, setAttemptId] = useState('');
   const [result, setResult] = useState<{ output: string[]; error?: string }>();
@@ -70,15 +71,14 @@ export function CodeExercise({
     }
   }
   useEffect(() => () => dispose(), []);
-  function change(value: string) {
-    setCode(value);
+  useEffect(() => {
+    dispose();
+    setRunning(false);
     setResult(undefined);
-    try {
-      localStorage.setItem(key, value);
-      setSaved(true);
-    } catch {
-      setSaved(false);
-    }
+  }, [code, accountId]);
+  function change(value: string) {
+    draft.edit(value);
+    setResult(undefined);
   }
   function run() {
     dispose();
@@ -124,11 +124,11 @@ export function CodeExercise({
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
-        disabled={running}
+        disabled={running || !editable}
         onChange={(event) => change(event.target.value)}
       />
       <div className="practice-actions">
-        <button type="button" disabled={running} onClick={run}>
+        <button type="button" disabled={running || !editable} onClick={run}>
           {text.run}
         </button>
         {running && (
@@ -143,11 +143,26 @@ export function CodeExercise({
             {text.stop}
           </button>
         )}
-        <button type="button" disabled={running} onClick={() => change(lesson.example)}>
+        <button
+          type="button"
+          disabled={running || !editable}
+          onClick={() => change(lesson.example)}
+        >
           {text.reset}
         </button>
       </div>
-      {saved !== undefined && <small>{saved ? text.saved : text.unsaved}</small>}
+      {accountId ? (
+        <CodeDraftStatus
+          state={draft.state}
+          locale={locale}
+          retry={draft.retry}
+          resolve={draft.resolve}
+        />
+      ) : (
+        draft.localSaved !== undefined && (
+          <small>{draft.localSaved ? text.saved : text.unsaved}</small>
+        )
+      )}
       <h4>{text.expected}</h4>
       <pre>{lesson.coding.expectedOutput.join('\n')}</pre>
       {result && (
@@ -178,6 +193,15 @@ export function CodeExercise({
             ? 'Sign in to save attempts and see your review queue.'
             : 'Inicia sesión para guardar intentos y ver tus repasos.'}
         </p>
+      )}
+      {accountId && (
+        <AttemptHistory
+          key={accountId}
+          lessonId={lesson.id}
+          locale={locale}
+          restore={change}
+          disabled={running || !editable || draft.state?.status === 'conflict'}
+        />
       )}
     </section>
   );

@@ -103,13 +103,34 @@ export const preferencesResponseSchema = z.object({
   meta: z.object({ requestId: z.string() }),
 });
 export const openDraftSchema = z
-  .object({ lessonId: z.string().min(1).max(100), lessonVersion: z.number().int().positive() })
+  .object({
+    lessonId: z.string().min(1).max(100),
+    lessonVersion: z.number().int().positive(),
+    kind: z.enum(['notes', 'code']).default('notes'),
+    expectedAccountId: z.string().min(1).max(200).optional(),
+  })
   .strict();
 export const draftResponseSchema = z.object({
   data: z.object({ id: z.string(), content: z.string(), revision: z.number().int().positive() }),
   meta: z.object({ requestId: z.string() }),
 });
 export type LessonDraft = z.infer<typeof draftResponseSchema>['data'];
+export const attemptHistorySchema = z.object({
+  data: z
+    .array(
+      z.object({
+        id: z.string(),
+        lessonId: z.string(),
+        lessonVersion: z.number(),
+        code: z.string().max(16000),
+        matched: z.boolean(),
+        createdAt: z.number(),
+      }),
+    )
+    .max(20),
+  meta: z.object({ requestId: z.string() }),
+});
+export type SavedAttempt = z.infer<typeof attemptHistorySchema>['data'][number];
 export const savedDraftResponseSchema = z.object({
   data: z.object({ revision: z.number().int().positive() }),
   meta: z.object({ requestId: z.string() }),

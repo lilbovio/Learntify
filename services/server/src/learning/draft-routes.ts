@@ -33,11 +33,22 @@ export function createDraftRoutes(auth: LearntifyAuth, drafts: DraftRepository) 
     }
     const parsed = openDraftSchema.safeParse(input);
     if (!parsed.success) return c.json(errorBody(c, 'INVALID_INPUT', 'Invalid lesson.'), 422);
+    if (
+      (parsed.data.kind === 'code' || parsed.data.expectedAccountId) &&
+      parsed.data.expectedAccountId !== c.get('ownerId')
+    )
+      return c.json(errorBody(c, 'ACCOUNT_CHANGED', 'Reload after changing accounts.'), 409);
     const lesson = getLesson(parsed.data.lessonId, 'en');
     if (!lesson) return c.json(errorBody(c, 'NOT_FOUND', 'Lesson not found.'), 404);
     if (lesson.version !== parsed.data.lessonVersion)
       return c.json(errorBody(c, 'VERSION_CONFLICT', 'Reload the lesson.'), 409);
-    const draft = await drafts.open(c.get('ownerId'), lesson.id, lesson.version);
+    const draft = await drafts.open(
+      c.get('ownerId'),
+      lesson.id,
+      lesson.version,
+      parsed.data.kind,
+      parsed.data.kind === 'code' ? lesson.example : '',
+    );
     return c.json({
       data: { id: draft.id, content: draft.content, revision: draft.revision },
       meta: meta(c),

@@ -42,9 +42,14 @@ it('replays concurrent saves, rejects changed payloads, isolates owners and vers
   ).toEqual(['saved', 'saved']);
   expect(await repository.save('alice', { ...attempt, code: 'different' }, 200)).toBe('conflict');
   expect(await repository.progress('bob')).toEqual([]);
+  expect(await repository.history('bob', 'values', 1)).toEqual([]);
   await repository.save('bob', attempt, 100);
   await repository.save('alice', { ...attempt, id: 'two', matched: false }, 200);
   await repository.save('alice', { ...attempt, id: 'three', lessonVersion: 2 }, 300);
+  expect((await repository.history('alice', 'values', 1)).map((row) => row.id)).toEqual([
+    'two',
+    'one',
+  ]);
   expect(await repository.progress('alice')).toEqual(
     expect.arrayContaining([
       { lessonId: 'values', lessonVersion: 1, attempts: 2, matched: false, lastPracticedAt: 200 },
@@ -54,6 +59,7 @@ it('replays concurrent saves, rejects changed payloads, isolates owners and vers
   const db = await runtime.getD1Database('DB');
   await db.prepare("DELETE FROM user WHERE id = 'alice'").run();
   expect(await repository.progress('alice')).toEqual([]);
+  expect(await repository.history('alice', 'values', 1)).toEqual([]);
   expect(await repository.progress('bob')).toHaveLength(1);
 });
 it('atomically caps rolling-day writes and still acknowledges retries at the limit', async () => {
@@ -70,6 +76,7 @@ it('atomically caps rolling-day writes and still acknowledges retries at the lim
   ]);
   expect(results.sort()).toEqual(['limit', 'saved']);
   expect((await repository.progress('alice'))[0]?.attempts).toBe(100);
+  expect(await repository.history('alice', 'values', 1)).toHaveLength(20);
   const stored = await db
     .prepare("SELECT id FROM practice_attempts WHERE id IN ('one', 'other')")
     .first<{ id: string }>();

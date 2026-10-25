@@ -545,6 +545,21 @@ describe('passwordless authentication with local D1', () => {
     );
     expect((await open('missing', 1)).status).toBe(404);
     expect((await open('values-and-expressions', 999)).status).toBe(409);
+    const openCode = (expectedAccountId: string) =>
+      app.request(origin + '/api/v1/drafts/open', {
+        method: 'POST',
+        headers: { cookie, Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonId: 'values-and-expressions',
+          lessonVersion: 1,
+          kind: 'code',
+          expectedAccountId,
+        }),
+      });
+    expect((await openCode('someone-else')).status).toBe(409);
+    const codeDraft = await (await openCode(user!.id)).json();
+    expect(codeDraft.data.content).toBe('console.log(3 + 2);');
+    expect((await (await open('values-and-expressions', 1)).json()).data.content).toBe('');
     expect((await app.request(origin + '/api/v1/drafts/mine')).status).toBe(401);
     expect(
       (await app.request(origin + '/api/v1/drafts/theirs', { headers: { cookie } })).status,

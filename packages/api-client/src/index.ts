@@ -1,4 +1,5 @@
 import {
+  attemptHistorySchema,
   practiceAttemptSchema,
   practiceSavedSchema,
   practiceProgressSchema,
@@ -45,6 +46,16 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async attemptHistory(lessonId: string, signal?: AbortSignal) {
+      return attemptHistorySchema.parse(
+        await read(
+          await fetcher(
+            '/api/v1/practice/history/' + encodeURIComponent(lessonId),
+            signal ? { signal } : {},
+          ),
+        ),
+      ).data;
+    },
     async saveAttempt(input: PracticeAttemptInput) {
       return practiceSavedSchema.parse(
         await read(
@@ -128,13 +139,23 @@ export function createApiClient(fetcher: typeof fetch = fetch) {
         ),
       ).data;
     },
-    async openDraft(lessonId: string, lessonVersion: number) {
+    async openDraft(
+      lessonId: string,
+      lessonVersion: number,
+      kind: 'notes' | 'code' = 'notes',
+      expectedAccountId?: string,
+    ) {
       return draftResponseSchema.parse(
         await read(
           await fetcher('/api/v1/drafts/open', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lessonId, lessonVersion }),
+            body: JSON.stringify({
+              lessonId,
+              lessonVersion,
+              kind,
+              ...(expectedAccountId ? { expectedAccountId } : {}),
+            }),
           }),
         ),
       ).data;

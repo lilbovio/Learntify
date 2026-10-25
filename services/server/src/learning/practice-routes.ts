@@ -51,5 +51,13 @@ export function createPracticeRoutes(auth: LearntifyAuth, repository: PracticeRe
       }));
     return c.json({ data: progress, meta: meta(c) });
   });
+  routes.get('/api/v1/practice/history/:lessonId', async (c) => {
+    const lesson = getLesson(c.req.param('lessonId'), 'en');
+    if (!lesson) return c.json(errorBody(c, 'NOT_FOUND', 'Lesson not found.'), 404);
+    return c.json({
+      data: await repository.history(c.get('ownerId'), lesson.id, lesson.version),
+      meta: meta(c),
+    });
+  });
   return routes;
 }

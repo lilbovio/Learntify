@@ -13,7 +13,7 @@ export const draftCopy = {
     keep: 'Keep my version',
     useRemote: 'Use the saved version',
     retry: 'Retry notes sync',
-    leave: 'Some notes are not saved. Leave this lesson anyway?',
+    leave: 'Some code or notes are not saved. Leave this lesson anyway?',
   },
   es: {
     title: 'Tus notas de la lección',
@@ -29,6 +29,6 @@ export const draftCopy = {
     keep: 'Conservar mi versión',
     useRemote: 'Usar la versión guardada',
     retry: 'Reintentar sincronización',
-    leave: 'Hay notas sin guardar. ¿Quieres salir de esta lección de todos modos?',
+    leave: 'Hay código o notas sin guardar. ¿Quieres salir de esta lección de todos modos?',
   },
 } satisfies Record<Locale, Record<string, string>>;

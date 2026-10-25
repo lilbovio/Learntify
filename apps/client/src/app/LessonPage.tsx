@@ -11,7 +11,8 @@ import { draftCopy } from '../features/draft/copy';
 const api = createApiClient();
 export function LessonPage() {
   const [locale, setLocale] = useState<Locale>(() => readRoute(window.location.pathname).locale);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>();
+  const [codeDirty, setCodeDirty] = useState(false);
   const [notesDirty, setNotesDirty] = useState(false);
   const [lessons, setLessons] = useState<LessonListItem[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState(
@@ -27,7 +28,10 @@ export function LessonPage() {
   const navigating = useRef(false);
   const currentIndex = lessons.findIndex((item) => item.id === currentLessonId);
   function selectLesson(id: string) {
-    if (id !== currentLessonId && (!notesDirty || window.confirm(draftCopy[locale].leave))) {
+    if (
+      id !== currentLessonId &&
+      (!(notesDirty || codeDirty) || window.confirm(draftCopy[locale].leave))
+    ) {
       navigating.current = true;
       setCurrentLessonId(id);
     }
@@ -100,7 +104,11 @@ export function LessonPage() {
         </label>
       </header>
       <main>
-        <AccountPanel locale={locale} onAccountChange={setAccountId} unsavedNotes={notesDirty} />
+        <AccountPanel
+          locale={locale}
+          onAccountChange={setAccountId}
+          unsavedNotes={notesDirty || codeDirty}
+        />
         <section className="lesson-intro" aria-labelledby="welcome">
           <div>
             <p className="eyebrow">
@@ -161,7 +169,9 @@ export function LessonPage() {
             {lesson && lesson.id === currentLessonId && (
               <div hidden={loading || loadFailed}>
                 <LessonWorkspace
-                  accountId={accountId}
+                  accountId={accountId ?? null}
+                  accountReady={accountId !== undefined}
+                  onCodeDirty={setCodeDirty}
                   key={lesson.id + ':' + lesson.version}
                   lesson={lesson}
                   locale={locale}
