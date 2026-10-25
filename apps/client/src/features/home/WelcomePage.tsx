@@ -40,6 +40,45 @@ export function WelcomePage({ locale }: { locale: Locale }) {
           <span className="result">5</span>
         </div>
       </div>
+      <section className="welcome-method">
+        <span className="stage-label">
+          {locale === 'en' ? 'Learn by understanding' : 'Aprende comprendiendo'}
+        </span>
+        <h2>
+          {locale === 'en'
+            ? 'Small ideas. Real understanding.'
+            : 'Ideas pequeñas. Comprensión real.'}
+        </h2>
+        <ol className="method-steps">
+          <li>
+            <h3>{locale === 'en' ? '01 · Read the idea' : '01 · Lee la idea'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Start with a clear explanation and a small example.'
+                : 'Empieza con una explicación clara y un ejemplo pequeño.'}
+            </p>
+          </li>
+          <li>
+            <h3>{locale === 'en' ? '02 · Make a prediction' : '02 · Haz una predicción'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Think through what the code will do before running it.'
+                : 'Piensa qué hará el código antes de ejecutarlo.'}
+            </p>
+          </li>
+          <li>
+            <h3>{locale === 'en' ? '03 · Try it yourself' : '03 · Pruébalo tú'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Change the code, compare the result, and revisit what you learned.'
+                : 'Cambia el código, compara el resultado y repasa lo aprendido.'}
+            </p>
+          </li>
+        </ol>
+        <a href={'/' + locale + '/learn'}>
+          {locale === 'en' ? 'Explore the learning path' : 'Explorar la ruta de aprendizaje'} →
+        </a>
+      </section>
     </PageFrame>
   );
 }

@@ -168,6 +168,13 @@ test('lesson notes sync across sessions and require an explicit choice on confli
   await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
   await page.reload();
   await expect(notes).toHaveValue('My newer explanation.');
+  await page.getByRole('link', { name: 'Notebook', exact: true }).click();
+  await page.getByLabel('Choose a lesson').selectOption('values-and-expressions');
+  await expect(notes).toHaveValue('My newer explanation.');
+  await notes.fill('Notebook edits reach the lesson.');
+  await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Open lesson', exact: false }).click();
+  await expect(notes).toHaveValue('Notebook edits reach the lesson.');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(notes).toHaveCount(0);
 });

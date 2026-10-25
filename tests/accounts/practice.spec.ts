@@ -36,6 +36,8 @@ test('practice survives reloads, retries once after a lost acknowledgement, and 
   await page.getByRole('link', { name: 'View progress and review' }).click();
   await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 1');
   await expect(page.locator('.practice-overview ol')).toContainText('Values become expressions');
+  await expect(page.locator('.next-action')).toContainText('Ready for a review');
+  await expect(page.locator('.next-action')).toContainText('Values become expressions');
   await page.reload();
   await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 1');
   await page.goto('/en/learn/lessons/values-and-expressions');
@@ -45,6 +47,10 @@ test('practice survives reloads, retries once after a lost acknowledgement, and 
   await expect(page.getByText('Code saved to your account.', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'View progress and review' }).click();
   await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 2');
+  await expect(page.locator('.practice-overview')).toContainText('No reviews due right now.');
+  await page.getByRole('link', { name: 'Progress', exact: true }).click();
+  await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 2');
+  await page.getByRole('link', { name: 'Practice', exact: true }).click();
   await expect(page.locator('.practice-overview')).toContainText('No reviews due right now.');
   await page.goto('/es/today');
   await expect(page.locator('.practice-overview')).toContainText('Intentos guardados: 2');

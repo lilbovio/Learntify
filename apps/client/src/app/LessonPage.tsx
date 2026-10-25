@@ -6,6 +6,7 @@ import { LessonWorkspace } from '../features/lesson/LessonWorkspace';
 import { copy } from '../shared/copy';
 import { AccountPanel } from '../features/account/AccountPanel';
 import { LessonNotes } from '../features/draft/LessonNotes';
+import { AppHeader } from '../shared/AppHeader';
 import { draftCopy } from '../features/draft/copy';
 
 const api = createApiClient();
@@ -90,19 +91,7 @@ export function LessonPage() {
       <a className="skip-link" href="#lesson">
         Skip to lesson / Ir a la lección
       </a>
-      <header className="topbar">
-        <a className="brand" href={'/' + locale}>
-          learntify<span aria-hidden="true">.</span>
-        </a>
-        <a href={'/' + locale + '/today'}>{locale === 'en' ? 'Today' : 'Hoy'}</a>
-        <label className="language">
-          {text.language}
-          <select value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </label>
-      </header>
+      <AppHeader locale={locale} onLocaleChange={setLocale} />
       <main>
         <AccountPanel
           locale={locale}

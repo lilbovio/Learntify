@@ -7,9 +7,11 @@ const api = createApiClient();
 export function PracticeOverview({
   locale,
   lessons,
+  mode = 'all',
 }: {
   locale: Locale;
   lessons: LessonListItem[];
+  mode?: 'all' | 'practice' | 'progress';
 }) {
   const [rows, setRows] = useState<PracticeProgress[]>();
   const [failed, setFailed] = useState(false);
@@ -84,36 +86,42 @@ export function PracticeOverview({
             {text.count}: {current.length} / {lessons.length}
           </p>
           {!current.length && <p>{text.empty}</p>}
-          <ul>
-            {current.map((row) => (
-              <li key={row.lessonId}>
-                <a href={lessonPath(locale, row.lessonId)}>
-                  {lessons.find((lesson) => lesson.id === row.lessonId)?.title}
-                </a>
-                <p>
-                  {text.attempts}: {row.attempts} · {row.matched ? text.match : text.mismatch}
-                </p>
-                {!row.due && (
-                  <small>
-                    {text.next}: {new Date(row.reviewDueAt).toLocaleString(locale)}
-                  </small>
-                )}
-              </li>
-            ))}
-          </ul>
-          <h3>{text.review}</h3>
-          {due?.length ? (
-            <ol>
-              {due.map((row) => (
+          {mode !== 'practice' && (
+            <ul>
+              {current.map((row) => (
                 <li key={row.lessonId}>
                   <a href={lessonPath(locale, row.lessonId)}>
                     {lessons.find((lesson) => lesson.id === row.lessonId)?.title}
                   </a>
+                  <p>
+                    {text.attempts}: {row.attempts} · {row.matched ? text.match : text.mismatch}
+                  </p>
+                  {!row.due && (
+                    <small>
+                      {text.next}: {new Date(row.reviewDueAt).toLocaleString(locale)}
+                    </small>
+                  )}
                 </li>
               ))}
-            </ol>
-          ) : (
-            <p>{text.clear}</p>
+            </ul>
+          )}
+          {mode !== 'progress' && (
+            <>
+              <h3>{text.review}</h3>
+              {due?.length ? (
+                <ol>
+                  {due.map((row) => (
+                    <li key={row.lessonId}>
+                      <a href={lessonPath(locale, row.lessonId)}>
+                        {lessons.find((lesson) => lesson.id === row.lessonId)?.title}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>{text.clear}</p>
+              )}
+            </>
           )}
         </>
       )}
