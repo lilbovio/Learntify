@@ -37,7 +37,7 @@ export function SettingsPage({ locale }: { locale: Locale }) {
     return () => controller.abort();
   }, [reload]);
   return (
-    <PageFrame locale={locale} title={text.title}>
+    <PageFrame locale={locale} title={text.title} variant="account">
       {state === 'loading' ? (
         <p role="status">{text.loading}</p>
       ) : state === 'disabled' ? (

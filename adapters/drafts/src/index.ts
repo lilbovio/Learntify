@@ -15,19 +15,27 @@ type Operation = { expected_revision: number; content_hash: string; resulting_re
 export class D1DraftRepository implements DraftRepository {
   constructor(private readonly db: DraftDatabase) {}
 
-  async open(ownerId: string, lessonId: string, lessonVersion: number): Promise<Draft> {
+  async open(
+    ownerId: string,
+    lessonId: string,
+    lessonVersion: number,
+    kind: 'notes' | 'code' = 'notes',
+    initialContent = '',
+  ): Promise<Draft> {
+    // Preserve existing note keys. Published lesson IDs never contain a colon.
+    const storageKey = kind === 'code' ? `code:${lessonId}` : lessonId;
     await this.db
       .prepare(
         `INSERT INTO drafts (id, owner_id, lesson_id, lesson_version, content, revision)
-      VALUES (?, ?, ?, ?, '', 1) ON CONFLICT(owner_id, lesson_id, lesson_version) DO NOTHING RETURNING id`,
+      VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(owner_id, lesson_id, lesson_version) DO NOTHING RETURNING id`,
       )
-      .bind(crypto.randomUUID(), ownerId, lessonId, lessonVersion)
+      .bind(crypto.randomUUID(), ownerId, storageKey, lessonVersion, initialContent)
       .first();
     const row = await this.db
       .prepare(
         'SELECT id, owner_id, content, revision FROM drafts WHERE owner_id = ? AND lesson_id = ? AND lesson_version = ?',
       )
-      .bind(ownerId, lessonId, lessonVersion)
+      .bind(ownerId, storageKey, lessonVersion)
       .first<Row>();
     if (!row) throw new Error('Could not open lesson draft.');
     return { id: row.id, ownerId: row.owner_id, content: row.content, revision: row.revision };

@@ -1,7 +1,18 @@
 import type { Locale } from '@learntify/api-contracts';
 export type Route = {
   locale: Locale;
-  screen: 'welcome' | 'auth' | 'start' | 'today' | 'settings' | 'lesson' | 'missing';
+  screen:
+    | 'welcome'
+    | 'auth'
+    | 'start'
+    | 'today'
+    | 'settings'
+    | 'lesson'
+    | 'notebook'
+    | 'learn'
+    | 'practice'
+    | 'progress'
+    | 'missing';
   lessonId?: string;
 };
 export function readRoute(pathname: string, search = ''): Route {
@@ -13,8 +24,13 @@ export function readRoute(pathname: string, search = ''): Route {
   if (!parts.length) return { locale, screen: 'welcome' };
   if (parts[0] !== 'en' && parts[0] !== 'es') return { locale, screen: 'missing' };
   if (parts.length === 1) return { locale, screen: 'welcome' };
-  if (parts.length === 2 && ['auth', 'start', 'today', 'settings'].includes(parts[1]!))
-    return { locale, screen: parts[1] as 'auth' | 'start' | 'today' | 'settings' };
+  if (
+    parts.length === 2 &&
+    ['auth', 'start', 'today', 'settings', 'learn', 'practice', 'progress', 'notebook'].includes(
+      parts[1]!,
+    )
+  )
+    return { locale, screen: parts[1] as Route['screen'] };
   if (
     parts.length === 4 &&
     parts[1] === 'learn' &&

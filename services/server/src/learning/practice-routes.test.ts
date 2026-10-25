@@ -5,6 +5,7 @@ import type { PracticeRepository } from '@learntify/learning';
 
 const origin = 'https://learntify.test';
 const repository: PracticeRepository = {
+  history: vi.fn(async () => []),
   save: vi.fn(async () => 'saved' as const),
   progress: vi.fn(async () => [
     {
@@ -48,6 +49,18 @@ const input = {
   code: 'console.log(7)',
   matched: true,
 };
+it('requires a session for history and derives its owner and current version on the server', async () => {
+  expect((await app.request('/api/v1/practice/history/values-and-expressions')).status).toBe(401);
+  const response = await app.request('/api/v1/practice/history/values-and-expressions', {
+    headers: { Cookie: 'test=alice' },
+  });
+  expect(response.status).toBe(200);
+  expect(repository.history).toHaveBeenCalledWith('alice', 'values-and-expressions', 1);
+  expect(
+    (await app.request('/api/v1/practice/history/unknown', { headers: { Cookie: 'test=alice' } }))
+      .status,
+  ).toBe(404);
+});
 function save(
   body: unknown,
   headers: Record<string, string> = { Origin: origin, Cookie: 'test=alice' },

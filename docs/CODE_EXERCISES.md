@@ -1,6 +1,6 @@
 # Code exercises
 
-The five bilingual foundation lessons include editable synchronous JavaScript exercises with expected output and immediate feedback. Code is saved by lesson/version in this browser only, shared by anyone using that browser profile. It is not yet synchronized to the account. Reset restores the lesson example.
+The nine bilingual foundation lessons include editable synchronous JavaScript exercises with expected output and immediate feedback. Guest code is saved by lesson/version in this browser, shared by anyone using that browser profile. Signed-in code synchronizes to an account-owned D1 draft after a 1.2-second pause. Account code is never copied into guest browser storage. Reset restores the lesson example.
 
 ## Execution boundary
 
@@ -8,7 +8,7 @@ The client lazily starts a dedicated Worker containing QuickJS compiled to WebAs
 
 Source is limited to 16,000 characters. Execution has a one-second VM interrupt deadline, a configured 16 MiB VM memory limit and 256 KiB stack limit. An independent five-second wall-clock timer terminates the Worker, including loading time. These are resource mitigations, not a guarantee of a fixed total browser memory footprint. Stop, lesson navigation and component unmount terminate the Worker. Output is capped at 50 lines and 1,000 characters per line. Objects are represented by type rather than traversed or invoking learner getters.
 
-Output matching is public practice feedback: it does not prove the intended technique was used, assess mastery or award a credential. Signed-in learners can now explicitly save code snapshots and client-reported results to D1. Today shows practice counts and a basic review queue. See [practice progress](PRACTICE_PROGRESS.md). Continuous code-draft synchronization and an attempt-history browser remain unfinished.
+Output matching is public practice feedback: it does not prove the intended technique was used, assess mastery or award a credential. Signed-in learners can now explicitly save code snapshots and client-reported results to D1. Today shows practice counts and a basic review queue. See [practice progress](PRACTICE_PROGRESS.md). Recent attempts can be inspected and loaded into the editor after confirmation. Cloud drafts preserve conflicts and failed writes for explicit recovery while the tab remains open; durable offline recovery and automatic guest import remain unfinished.
 
 ## Verification
 

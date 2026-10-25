@@ -8,3 +8,6 @@ docs/planning/
 LEARNTIFY_PLAN.md
 # Existing OpenCode scratch experiment, not part of the application.
 test.ts
+
+# Original design reference; application code is formatted separately.
+ai-studio-desing/

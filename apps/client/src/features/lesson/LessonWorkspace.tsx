@@ -10,10 +10,14 @@ export function LessonWorkspace({
   lesson,
   locale,
   accountId,
+  accountReady,
+  onCodeDirty,
 }: {
   lesson: Lesson;
   locale: Locale;
   accountId: string | null;
+  accountReady: boolean;
+  onCodeDirty: (value: boolean) => void;
 }) {
   const text = copy[locale];
   const [choice, setChoice] = useState(() => {
@@ -122,7 +126,13 @@ export function LessonWorkspace({
         </section>
       )}
       <p className="practice-note">{text.note}</p>
-      <CodeExercise lesson={lesson} locale={locale} accountId={accountId} />
+      <CodeExercise
+        lesson={lesson}
+        locale={locale}
+        accountId={accountId}
+        accountReady={accountReady}
+        onCodeDirty={onCodeDirty}
+      />
     </>
   );
 }

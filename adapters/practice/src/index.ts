@@ -10,6 +10,16 @@ export interface PracticeDatabase {
 }
 export class D1PracticeRepository implements PracticeRepository {
   constructor(private readonly db: PracticeDatabase) {}
+  async history(ownerId: string, lessonId: string, lessonVersion: number) {
+    const rows = await this.db
+      .prepare(
+        `SELECT id, lesson_id AS lessonId, lesson_version AS lessonVersion, code, matched, created_at AS createdAt
+      FROM practice_attempts WHERE user_id = ? AND lesson_id = ? AND lesson_version = ? ORDER BY created_at DESC, id DESC LIMIT 20`,
+      )
+      .bind(ownerId, lessonId, lessonVersion)
+      .all<Omit<PracticeAttempt, 'matched'> & { matched: number; createdAt: number }>();
+    return rows.results.map((row) => ({ ...row, matched: Boolean(row.matched) }));
+  }
   async save(ownerId: string, attempt: PracticeAttempt, now: number) {
     // Conditional insertion makes the rolling daily cap atomic even across concurrent requests.
     const inserted = await this.db

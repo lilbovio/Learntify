@@ -1,13 +1,13 @@
 :root {
   font-family: ui-sans-serif, system-ui, sans-serif;
-  color: #292e29;
-  background: #f5f1e9;
+  color: #23201d;
+  background: #faf8f5;
   font-synthesis: none;
   line-height: 1.65;
   --accent: #9c432a;
-  --muted: #596258;
-  --stroke: #d6d6c9;
-  --surface: #fffdf8;
+  --muted: #58534c;
+  --stroke: #e5dfd4;
+  --surface: #ffffff;
 }
 * {
   box-sizing: border-box;

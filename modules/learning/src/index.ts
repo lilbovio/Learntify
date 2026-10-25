@@ -14,6 +14,11 @@ export type PracticeProgress = {
   lastPracticedAt: number;
 };
 export interface PracticeRepository {
+  history(
+    ownerId: string,
+    lessonId: string,
+    lessonVersion: number,
+  ): Promise<(PracticeAttempt & { createdAt: number })[]>;
   save(
     ownerId: string,
     attempt: PracticeAttempt,
@@ -49,7 +54,13 @@ export type SaveResult =
   | { kind: 'operation-conflict' };
 
 export interface DraftRepository {
-  open(ownerId: string, lessonId: string, lessonVersion: number): Promise<Draft>;
+  open(
+    ownerId: string,
+    lessonId: string,
+    lessonVersion: number,
+    kind?: 'notes' | 'code',
+    initialContent?: string,
+  ): Promise<Draft>;
   get(id: string, ownerId: string): Promise<Draft | undefined>;
   save(input: SaveDraft): Promise<SaveResult>;
 }

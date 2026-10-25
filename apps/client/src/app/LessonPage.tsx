@@ -6,12 +6,14 @@ import { LessonWorkspace } from '../features/lesson/LessonWorkspace';
 import { copy } from '../shared/copy';
 import { AccountPanel } from '../features/account/AccountPanel';
 import { LessonNotes } from '../features/draft/LessonNotes';
+import { AppHeader } from '../shared/AppHeader';
 import { draftCopy } from '../features/draft/copy';
 
 const api = createApiClient();
 export function LessonPage() {
   const [locale, setLocale] = useState<Locale>(() => readRoute(window.location.pathname).locale);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>();
+  const [codeDirty, setCodeDirty] = useState(false);
   const [notesDirty, setNotesDirty] = useState(false);
   const [lessons, setLessons] = useState<LessonListItem[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState(
@@ -27,7 +29,10 @@ export function LessonPage() {
   const navigating = useRef(false);
   const currentIndex = lessons.findIndex((item) => item.id === currentLessonId);
   function selectLesson(id: string) {
-    if (id !== currentLessonId && (!notesDirty || window.confirm(draftCopy[locale].leave))) {
+    if (
+      id !== currentLessonId &&
+      (!(notesDirty || codeDirty) || window.confirm(draftCopy[locale].leave))
+    ) {
       navigating.current = true;
       setCurrentLessonId(id);
     }
@@ -86,21 +91,13 @@ export function LessonPage() {
       <a className="skip-link" href="#lesson">
         Skip to lesson / Ir a la lección
       </a>
-      <header className="topbar">
-        <a className="brand" href={'/' + locale}>
-          learntify<span aria-hidden="true">.</span>
-        </a>
-        <a href={'/' + locale + '/today'}>{locale === 'en' ? 'Today' : 'Hoy'}</a>
-        <label className="language">
-          {text.language}
-          <select value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </label>
-      </header>
+      <AppHeader locale={locale} onLocaleChange={setLocale} />
       <main>
-        <AccountPanel locale={locale} onAccountChange={setAccountId} unsavedNotes={notesDirty} />
+        <AccountPanel
+          locale={locale}
+          onAccountChange={setAccountId}
+          unsavedNotes={notesDirty || codeDirty}
+        />
         <section className="lesson-intro" aria-labelledby="welcome">
           <div>
             <p className="eyebrow">
@@ -161,7 +158,9 @@ export function LessonPage() {
             {lesson && lesson.id === currentLessonId && (
               <div hidden={loading || loadFailed}>
                 <LessonWorkspace
-                  accountId={accountId}
+                  accountId={accountId ?? null}
+                  accountReady={accountId !== undefined}
+                  onCodeDirty={setCodeDirty}
                   key={lesson.id + ':' + lesson.version}
                   lesson={lesson}
                   locale={locale}
