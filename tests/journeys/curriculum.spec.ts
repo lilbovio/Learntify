@@ -2,6 +2,18 @@ import { expect, test } from '@playwright/test';
 
 const exercises = [
   {
+    id: 'building-a-basket-total',
+    title: 'Build a basket total',
+    answer: '800',
+    code: 'function basketTotal(items) { let total = 0; for (let i = 0; i < items.length; i = i + 1) { total = total + items[i].priceCents * items[i].quantity; } return total; }\nconsole.log(basketTotal([]));\nconsole.log(basketTotal([{ priceCents: 250, quantity: 2 }]));\nconsole.log(basketTotal([{ priceCents: 250, quantity: 2 }, { priceCents: 100, quantity: 3 }]));',
+  },
+  {
+    id: 'building-a-study-summary',
+    title: 'Build a study summary',
+    answer: '15',
+    code: 'function completedMinutes(sessions) { let total = 0; for (let i = 0; i < sessions.length; i = i + 1) { if (sessions[i].completed === true) { total = total + sessions[i].minutes; } } return total; }\nconsole.log(completedMinutes([]));\nconsole.log(completedMinutes([{ minutes: 20, completed: false }]));\nconsole.log(completedMinutes([{ minutes: 15, completed: true }, { minutes: 20, completed: false }, { minutes: 10, completed: true }]));',
+  },
+  {
     id: 'repeating-with-loops',
     title: 'Repeating with loops',
     answer: '1, 2, 3',
@@ -62,7 +74,7 @@ test('expanded foundations have previous, next and return navigation', async ({ 
   await expect(page.getByRole('heading', { name: 'Comparing values', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Next lesson' }).click();
   await expect(page.getByRole('heading', { name: 'Making decisions', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Describing things with objects', exact: false }).click();
+  await page.getByRole('button', { name: 'Build a study summary', exact: false }).click();
   await expect(page.getByRole('link', { name: 'Return to your practice' })).toBeVisible();
 });
 

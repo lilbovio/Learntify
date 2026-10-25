@@ -4,7 +4,7 @@ test('library search preserves lesson order and opens the real workspace', async
   page,
 }, testInfo) => {
   await page.goto('/en/learn');
-  await expect(page.locator('.library-items li')).toHaveCount(9);
+  await expect(page.locator('.library-items li')).toHaveCount(11);
   await page.getByRole('button', { name: 'Path', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Path', exact: true })).toHaveAttribute(
     'aria-pressed',
@@ -22,7 +22,7 @@ test('library search preserves lesson order and opens the real workspace', async
 test('Spanish mobile hubs have honest guest states and no overflow', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/es/learn');
-  await expect(page.locator('.library-items li')).toHaveCount(9);
+  await expect(page.locator('.library-items li')).toHaveCount(11);
   await page.getByRole('searchbox').fill('zzzz');
   await expect(
     page.getByText('No hay lecciones con esa búsqueda. Prueba otra palabra.'),
