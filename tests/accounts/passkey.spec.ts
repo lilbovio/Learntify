@@ -62,6 +62,7 @@ test('enrolls a passkey, signs in after logout without mail, and removes the cre
   expect(connectionRequests).toBe(2);
   await page.goto('/en/settings');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect((await page.request.get('/api/v1/me')).status()).toBe(401);
   await page.goto('/en/auth');
   await cdp.send('WebAuthn.setUserVerified', { authenticatorId, isUserVerified: false });

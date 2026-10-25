@@ -41,6 +41,7 @@ export const capabilitiesResponseSchema = z.object({
     cloudDrafts: z.boolean(),
     preferences: z.boolean(),
     accountDeletion: z.boolean(),
+    practice: z.boolean().default(false),
   }),
   meta: z.object({ requestId: z.string() }),
 });
@@ -58,6 +59,37 @@ export const saveDraftSchema = z
   .strict();
 
 export const localeSchema = z.enum(['en', 'es']);
+export const practiceAttemptSchema = z
+  .object({
+    id: z.string().uuid(),
+    lessonId: z.string().min(1).max(100),
+    lessonVersion: z.number().int().positive(),
+    code: z.string().max(16000),
+    matched: z.boolean(),
+    expectedAccountId: z.string().min(1).max(200),
+  })
+  .strict();
+export type PracticeAttemptInput = z.infer<typeof practiceAttemptSchema>;
+export const practiceSavedSchema = z.object({
+  data: z.object({ saved: z.literal(true) }),
+  meta: z.object({ requestId: z.string() }),
+});
+export const practiceProgressSchema = z.object({
+  data: z.array(
+    z.object({
+      lessonId: z.string(),
+      lessonVersion: z.number().int().positive(),
+      attempts: z.number().int().positive(),
+      matched: z.boolean(),
+      lastPracticedAt: z.number(),
+      reviewDueAt: z.number(),
+      due: z.boolean(),
+      provenance: z.literal('client-reported-practice'),
+    }),
+  ),
+  meta: z.object({ requestId: z.string() }),
+});
+export type PracticeProgress = z.infer<typeof practiceProgressSchema>['data'][number];
 export const preferencesSchema = z
   .object({
     locale: localeSchema,
@@ -92,6 +124,7 @@ export const lessonSchema = z.object({
   objective: z.string(),
   explanation: z.array(z.string()).min(1),
   example: z.string(),
+  coding: z.object({ prompt: z.string(), expectedOutput: z.array(z.string()) }),
   exercise: z.object({
     id: z.string(),
     prompt: z.string(),

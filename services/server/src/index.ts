@@ -8,7 +8,12 @@ import {
   predictionResponseSchema,
 } from '@learntify/api-contracts';
 import { checkPrediction, getLesson, listLessons } from '@learntify/curriculum';
-import type { DraftRepository, PreferencesRepository } from '@learntify/learning';
+import type {
+  DraftRepository,
+  PreferencesRepository,
+  PracticeRepository,
+} from '@learntify/learning';
+import { createPracticeRoutes } from './learning/practice-routes';
 import type { LearntifyAuth } from './auth/create-auth';
 import { createAccountRoutes } from './auth/routes';
 import { createDraftRoutes } from './learning/draft-routes';
@@ -21,6 +26,7 @@ export function createApp(
     auth?: LearntifyAuth;
     drafts?: DraftRepository;
     preferences?: PreferencesRepository;
+    practice?: PracticeRepository;
     admission?: AccountAdmission;
   } = {},
 ) {
@@ -86,7 +92,8 @@ export function createApp(
         accountDeletion: dependencies.auth?.options.user?.deleteUser?.enabled === true,
         preferences: Boolean(dependencies.auth && dependencies.preferences),
         cloudDrafts: Boolean(dependencies.auth && dependencies.drafts),
-        codeExecution: false,
+        codeExecution: true,
+        practice: Boolean(dependencies.auth && dependencies.practice),
         community: false,
       },
       meta: { requestId: c.get('requestId') },
@@ -196,6 +203,8 @@ export function createApp(
 
   if (dependencies.auth) {
     app.route('/', createAccountRoutes(dependencies.auth, dependencies.admission));
+    if (dependencies.practice)
+      app.route('/', createPracticeRoutes(dependencies.auth, dependencies.practice));
     if (dependencies.preferences)
       app.route('/', createPreferencesRoutes(dependencies.auth, dependencies.preferences));
     if (dependencies.drafts)

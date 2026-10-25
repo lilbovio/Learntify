@@ -14,7 +14,7 @@ export const accountCopy = {
     send: 'Send sign-in link',
     sending: 'Requesting link…',
     sent: 'Link requested. If this address has access, a sign-in email will arrive shortly. Its link expires in 10 minutes.',
-    signedIn: 'You’re signed in. Cloud progress is not available in this preview yet.',
+    signedIn: 'You’re signed in.',
     signOut: 'Sign out',
     sessionHelp:
       'On your own device, close the tab to stay signed in. Your session lasts up to 7 days. Signing out ends it, so your next email sign-in needs a new link.',
@@ -39,8 +39,7 @@ export const accountCopy = {
     send: 'Enviar enlace de acceso',
     sending: 'Solicitando enlace…',
     sent: 'Enlace solicitado. Si este correo tiene acceso, recibirás un mensaje en breve. Su enlace vence en 10 minutos.',
-    signedIn:
-      'Iniciaste sesión. El progreso en la nube aún no está disponible en esta vista previa.',
+    signedIn: 'Iniciaste sesión.',
     signOut: 'Cerrar sesión',
     sessionHelp:
       'En tu propio dispositivo, cierra la pestaña para mantener tu sesión. La sesión dura hasta 7 días. Cerrar sesión la termina; el siguiente acceso por correo requiere un enlace nuevo.',

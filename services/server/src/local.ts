@@ -1,6 +1,7 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import { createAuth } from './auth/create-auth';
 import { createApp } from './index';
+import { D1PracticeRepository, type PracticeDatabase } from '@learntify/practice-storage';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 
@@ -38,6 +39,7 @@ export default {
     await auth.$context;
     return createApp({
       auth,
+      practice: new D1PracticeRepository(env.DB as unknown as PracticeDatabase),
       preferences: new D1PreferencesRepository(env.DB as unknown as PreferencesDatabase),
       drafts: new D1DraftRepository(env.DB as unknown as DraftDatabase),
     }).fetch(request);

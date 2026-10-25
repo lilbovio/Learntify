@@ -1,4 +1,5 @@
 import { createApp } from './index';
+import { D1PracticeRepository, type PracticeDatabase } from '@learntify/practice-storage';
 import { createAuth } from './auth/create-auth';
 import {
   readAccountConfiguration,
@@ -42,6 +43,7 @@ export async function serveAccounts(
   }
   return createApp({
     auth,
+    practice: new D1PracticeRepository(configuration.database as unknown as PracticeDatabase),
     admission,
     drafts: new D1DraftRepository(configuration.database as unknown as DraftDatabase),
     preferences: new D1PreferencesRepository(

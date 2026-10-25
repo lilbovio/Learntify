@@ -73,7 +73,12 @@ export function AccountPanel({
       </p>
     );
   return (
-    <section className="account-panel" aria-labelledby="account-title">
+    <section
+      className={
+        !standalone && state === 'member' ? 'account-panel account-compact' : 'account-panel'
+      }
+      aria-labelledby="account-title"
+    >
       <h2 id="account-title">{text.title}</h2>
       {state === 'failed' ? (
         <div role="alert">
@@ -83,7 +88,7 @@ export function AccountPanel({
       ) : state === 'member' ? (
         <div>
           <p role="status">{text.signedIn}</p>
-          <p>{text.sessionHelp}</p>
+          {standalone && <p>{text.sessionHelp}</p>}
           <p>
             <a href={'/' + locale + '/settings'}>
               {locale === 'en' ? 'Account settings' : 'Configuración de cuenta'}

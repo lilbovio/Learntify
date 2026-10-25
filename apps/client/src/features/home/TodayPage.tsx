@@ -6,6 +6,7 @@ import { lessonPath } from '../../shared/routes';
 import { readGuestPreferences } from '../onboarding/preferences';
 import { AccountPanel } from '../account/AccountPanel';
 import { homeCopy } from './copy';
+import { PracticeOverview } from './PracticeOverview';
 
 const api = createApiClient();
 export function TodayPage({ locale }: { locale: Locale }) {
@@ -83,7 +84,11 @@ export function TodayPage({ locale }: { locale: Locale }) {
                 </li>
               ))}
             </ol>
-            <p className="practice-note">{text.noMetrics}</p>
+            {accountId ? (
+              <PracticeOverview key={accountId} locale={locale} lessons={data.lessons} />
+            ) : (
+              <p className="practice-note">{text.noMetrics}</p>
+            )}
           </section>
         </div>
       )}
