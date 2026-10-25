@@ -31,6 +31,36 @@ test('enrolls a passkey, signs in after logout without mail, and removes the cre
   await page.getByLabel('Passkey name').fill('Test laptop');
   await page.getByRole('button', { name: 'Add a passkey', exact: true }).click();
   await expect(page.getByText('Passkey added.', { exact: true })).toBeVisible();
+  await page.route('**/api/auth/social-providers', (route) =>
+    route.fulfill({ json: { providers: ['google', 'github'] } }),
+  );
+  await page.route('**/api/auth/social-connections', (route) =>
+    route.fulfill({ json: { providers: ['google'] } }),
+  );
+  let connectionRequests = 0;
+  await page.route('**/api/auth/social/link', (route) => {
+    connectionRequests++;
+    return connectionRequests === 1
+      ? route.fulfill({
+          status: 409,
+          json: {
+            error: { code: 'REAUTHENTICATION_REQUIRED', message: 'Confirm identity' },
+            meta: { requestId: 'test' },
+          },
+        })
+      : route.fulfill({ json: { url: 'https://github.com/login/oauth/authorize?test=1' } });
+  });
+  await page.route('https://github.com/login/oauth/authorize?test=1', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>Provider reached</p>' }),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Google — Connected', exact: true }),
+  ).toBeDisabled();
+  await page.getByRole('button', { name: 'Connect GitHub', exact: true }).click();
+  await expect(page.getByText('Provider reached')).toBeVisible();
+  expect(connectionRequests).toBe(2);
+  await page.goto('/en/settings');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   expect((await page.request.get('/api/v1/me')).status()).toBe(401);
   await page.goto('/en/auth');
@@ -54,4 +84,11 @@ test('enrolls a passkey, signs in after logout without mail, and removes the cre
   await page.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(page.getByText('Passkey removed.', { exact: true })).toBeVisible();
   await expect(page.getByText('No passkeys added yet.', { exact: true })).toBeVisible();
+  await page.goto('/en/auth?reauth=1');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('I confirm I am 18 or older.').check();
+  await page.getByRole('button', { name: 'Send sign-in link', exact: true }).click();
+  await expect(page.getByText('Link requested.', { exact: false })).toBeVisible();
+  await page.goto(await readLocalSignInLink(email));
+  await expect(page).toHaveURL(/\/en\/settings$/);
 });

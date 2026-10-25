@@ -40,7 +40,7 @@ The integration uses identity and email access, not repository permissions. Your
 ## Test the account flow
 
 1. Sign in to Learntify with email or your passkey.
-2. Within 15 minutes, open account settings and choose Connect Google or Connect GitHub.
+2. Open account settings and choose Connect Google or Connect GitHub. If identity confirmation is needed, complete the passkey prompt; the pending connection resumes automatically. If no passkey is available, use Confirm by email instead. That link returns to settings without requiring logout; select the provider again.
 3. Authorize that provider yourself. Use the same verified email. Settings displays the connected provider after the callback.
 4. Sign out and use Continue with Google/GitHub on the sign-in page.
 

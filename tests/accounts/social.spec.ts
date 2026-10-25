@@ -34,5 +34,5 @@ test('shows configured providers and preserves email recovery after OAuth initia
     }),
   );
   await page.getByRole('button', { name: 'Continuar con GitHub', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('últimos 15 minutos');
+  await expect(page.getByRole('alert')).toContainText('No se completó la confirmación');
 });
