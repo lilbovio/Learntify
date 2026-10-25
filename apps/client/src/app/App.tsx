@@ -8,10 +8,13 @@ import { SettingsPage } from '../features/account/SettingsPage';
 import { PageFrame } from '../shared/PageFrame';
 import { LearningHubPage } from '../features/home/LearningHubPage';
 import { NotebookPage } from '../features/home/NotebookPage';
+import { ProjectsPage } from '../features/home/ProjectsPage';
 
 export function App() {
   const route = readRoute(window.location.pathname, window.location.search);
   switch (route.screen) {
+    case 'projects':
+      return <ProjectsPage locale={route.locale} />;
     case 'notebook':
       return <NotebookPage locale={route.locale} />;
     case 'learn':

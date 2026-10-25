@@ -8,6 +8,7 @@ export type Route = {
     | 'today'
     | 'settings'
     | 'lesson'
+    | 'projects'
     | 'notebook'
     | 'learn'
     | 'practice'
@@ -26,9 +27,17 @@ export function readRoute(pathname: string, search = ''): Route {
   if (parts.length === 1) return { locale, screen: 'welcome' };
   if (
     parts.length === 2 &&
-    ['auth', 'start', 'today', 'settings', 'learn', 'practice', 'progress', 'notebook'].includes(
-      parts[1]!,
-    )
+    [
+      'auth',
+      'start',
+      'today',
+      'settings',
+      'learn',
+      'practice',
+      'progress',
+      'notebook',
+      'projects',
+    ].includes(parts[1]!)
   )
     return { locale, screen: parts[1] as Route['screen'] };
   if (

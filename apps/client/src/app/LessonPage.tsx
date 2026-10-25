@@ -7,6 +7,7 @@ import { copy } from '../shared/copy';
 import { AccountPanel } from '../features/account/AccountPanel';
 import { LessonNotes } from '../features/draft/LessonNotes';
 import { AppHeader } from '../shared/AppHeader';
+import { ProjectGuide } from '../features/lesson/ProjectGuide';
 import { draftCopy } from '../features/draft/copy';
 
 const api = createApiClient();
@@ -157,6 +158,7 @@ export function LessonPage() {
             {/* Keep a locale refresh mounted so temporary answers survive unavailable browser storage. */}
             {lesson && lesson.id === currentLessonId && (
               <div hidden={loading || loadFailed}>
+                {lesson.project && <ProjectGuide project={lesson.project} locale={locale} />}
                 <LessonWorkspace
                   accountId={accountId ?? null}
                   accountReady={accountId !== undefined}
@@ -165,6 +167,14 @@ export function LessonPage() {
                   lesson={lesson}
                   locale={locale}
                 />
+                {lesson.project && <ProjectGuide project={lesson.project} locale={locale} review />}
+                {lesson.project && !accountId && (
+                  <p>
+                    {locale === 'en'
+                      ? 'Sign in to save your walkthrough in private lesson notes.'
+                      : 'Inicia sesión para guardar tu explicación en notas privadas.'}
+                  </p>
+                )}
                 {accountId && (
                   <LessonNotes
                     key={accountId + ':' + lesson.id + ':' + lesson.version}

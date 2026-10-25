@@ -74,7 +74,7 @@ test('expanded foundations have previous, next and return navigation', async ({ 
   await expect(page.getByRole('heading', { name: 'Comparing values', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Next lesson' }).click();
   await expect(page.getByRole('heading', { name: 'Making decisions', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Build a study summary', exact: false }).click();
+  await page.getByRole('button', { name: 'Project: basket calculator', exact: false }).click();
   await expect(page.getByRole('link', { name: 'Return to your practice' })).toBeVisible();
 });
 

@@ -15,7 +15,7 @@ The original export lives in `ai-studio-desing/`. It is a design reference, not 
 
 The export's role picker, simulated sign-in, fixture users, invented activity and mocked execution are not authorization, persistence or grading implementations. No Gemini SDK, Express server, remote fonts or additional paid service was introduced.
 
-Project workspaces, teach-back, bug clinic, interview sessions/reviews, profiles, notifications, authoring and moderation tools still require their actual product behavior and authorization. Their exported screens remain design references; they are not advertised as working features. Public community posting, study circles and chat stay unreleased until moderators are available. This is a first core integration, not completion of every exported screen or a production-readiness claim.
+One guided project workspace now supports function checks and a private-notes interview walkthrough. Multi-project workspaces, teach-back, bug clinic, full interview sessions/reviews, profiles, notifications, authoring and moderation tools still require further product behavior and authorization. Their exported screens remain design references; they are not advertised as working features. Public community posting, study circles and chat stay unreleased until moderators are available. This is a first core integration, not completion of every exported screen or a production-readiness claim.
 
 ## Validation
 

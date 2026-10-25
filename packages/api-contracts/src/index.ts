@@ -145,7 +145,23 @@ export const lessonSchema = z.object({
   objective: z.string(),
   explanation: z.array(z.string()).min(1),
   example: z.string(),
-  coding: z.object({ prompt: z.string(), expectedOutput: z.array(z.string()) }),
+  coding: z.object({
+    prompt: z.string(),
+    expectedOutput: z.array(z.string()),
+    checks: z
+      .array(
+        z.object({ label: z.string(), expression: z.string().max(2000), expected: z.number() }),
+      )
+      .max(20)
+      .optional(),
+  }),
+  project: z
+    .object({
+      requirements: z.array(z.string()),
+      milestones: z.array(z.string()),
+      reflection: z.array(z.string()),
+    })
+    .optional(),
   exercise: z.object({
     id: z.string(),
     prompt: z.string(),

@@ -4,7 +4,7 @@ import base from './playwright.config';
 // Exercise the built Worker/WASM asset URLs, not only Vite's development loader.
 export default defineConfig({
   ...base,
-  testMatch: 'code.spec.ts',
+  testMatch: ['code.spec.ts', 'project.spec.ts'],
   outputDir: './test-results/production',
   webServer: [
     {

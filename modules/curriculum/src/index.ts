@@ -1,6 +1,7 @@
 import { nextFoundations } from './next-foundations';
 import { structuredFoundations } from './structured-foundations';
 import { appliedFoundations } from './applied-foundations';
+import { basketProject } from './basket-project';
 export type ContentLocale = 'en' | 'es';
 
 export type LessonData = {
@@ -10,7 +11,16 @@ export type LessonData = {
   objective: { en: string; es: string };
   explanation: { en: string[]; es: string[] };
   example: string;
-  coding: { prompt: { en: string; es: string }; expectedOutput: string[] };
+  coding: {
+    prompt: { en: string; es: string };
+    expectedOutput: string[];
+    checks?: Array<{ label: { en: string; es: string }; expression: string; expected: number }>;
+  };
+  project?: {
+    requirements: { en: string[]; es: string[] };
+    milestones: { en: string[]; es: string[] };
+    reflection: { en: string[]; es: string[] };
+  };
   exercise: {
     id: string;
     prompt: { en: string; es: string };
@@ -131,6 +141,7 @@ const lessons: LessonData[] = [
   ...nextFoundations,
   ...structuredFoundations,
   ...appliedFoundations,
+  basketProject,
 ];
 
 export const firstLessonId = lessons[0]!.id;
@@ -146,7 +157,24 @@ export function getLesson(id: string, locale: ContentLocale) {
     objective: lesson.objective[locale],
     explanation: lesson.explanation[locale],
     example: lesson.example,
-    coding: { prompt: lesson.coding.prompt[locale], expectedOutput: lesson.coding.expectedOutput },
+    coding: {
+      prompt: lesson.coding.prompt[locale],
+      expectedOutput: lesson.coding.expectedOutput,
+      ...(lesson.coding.checks
+        ? {
+            checks: lesson.coding.checks.map((check) => ({ ...check, label: check.label[locale] })),
+          }
+        : {}),
+    },
+    ...(lesson.project
+      ? {
+          project: {
+            requirements: lesson.project.requirements[locale],
+            milestones: lesson.project.milestones[locale],
+            reflection: lesson.project.reflection[locale],
+          },
+        }
+      : {}),
     exercise: {
       id: lesson.exercise.id,
       prompt: lesson.exercise.prompt[locale],
