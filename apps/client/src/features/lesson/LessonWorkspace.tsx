@@ -6,7 +6,15 @@ import { copy } from '../../shared/copy';
 import { CodeExercise } from './CodeExercise';
 
 const api = createApiClient();
-export function LessonWorkspace({ lesson, locale }: { lesson: Lesson; locale: Locale }) {
+export function LessonWorkspace({
+  lesson,
+  locale,
+  accountId,
+}: {
+  lesson: Lesson;
+  locale: Locale;
+  accountId: string | null;
+}) {
   const text = copy[locale];
   const [choice, setChoice] = useState(() => {
     try {
@@ -114,7 +122,7 @@ export function LessonWorkspace({ lesson, locale }: { lesson: Lesson; locale: Lo
         </section>
       )}
       <p className="practice-note">{text.note}</p>
-      <CodeExercise lesson={lesson} locale={locale} />
+      <CodeExercise lesson={lesson} locale={locale} accountId={accountId} />
     </>
   );
 }

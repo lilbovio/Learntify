@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lesson, Locale } from '@learntify/api-contracts';
+import { SaveAttempt } from './SaveAttempt';
 
 const copy = {
   en: {
@@ -38,7 +39,15 @@ const copy = {
   },
 };
 
-export function CodeExercise({ lesson, locale }: { lesson: Lesson; locale: Locale }) {
+export function CodeExercise({
+  lesson,
+  locale,
+  accountId,
+}: {
+  lesson: Lesson;
+  locale: Locale;
+  accountId: string | null;
+}) {
   const text = copy[locale];
   const key = `learntify:code:${lesson.id}:${lesson.version}`;
   const [code, setCode] = useState(() => {
@@ -50,6 +59,7 @@ export function CodeExercise({ lesson, locale }: { lesson: Lesson; locale: Local
   });
   const [saved, setSaved] = useState<boolean>();
   const [running, setRunning] = useState(false);
+  const [attemptId, setAttemptId] = useState('');
   const [result, setResult] = useState<{ output: string[]; error?: string }>();
   const active = useRef<{ worker: Worker; timer: ReturnType<typeof setTimeout> } | null>(null);
   function dispose() {
@@ -72,6 +82,7 @@ export function CodeExercise({ lesson, locale }: { lesson: Lesson; locale: Local
   }
   function run() {
     dispose();
+    setAttemptId(crypto.randomUUID());
     setRunning(true);
     setResult(undefined);
     try {
@@ -147,6 +158,27 @@ export function CodeExercise({ lesson, locale }: { lesson: Lesson; locale: Local
         </div>
       )}
       <p className="practice-note">{text.note}</p>
+      {result && accountId && (
+        <SaveAttempt
+          key={accountId + ':' + attemptId}
+          locale={locale}
+          input={{
+            id: attemptId,
+            lessonId: lesson.id,
+            lessonVersion: lesson.version,
+            code,
+            matched: Boolean(passed),
+            expectedAccountId: accountId,
+          }}
+        />
+      )}
+      {result && !accountId && (
+        <p>
+          {locale === 'en'
+            ? 'Sign in to save attempts and see your review queue.'
+            : 'Inicia sesión para guardar intentos y ver tus repasos.'}
+        </p>
+      )}
     </section>
   );
 }

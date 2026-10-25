@@ -21,6 +21,7 @@
     "@learntify/email": "workspace:*",
     "@learntify/learning": "workspace:*",
     "@learntify/preferences-storage": "workspace:*",
+    "@learntify/practice-storage": "workspace:*",
     "better-auth": "1.7.12",
     "hono": "4.13.13"
   },

@@ -1,4 +1,8 @@
 import {
+  practiceAttemptSchema,
+  practiceSavedSchema,
+  practiceProgressSchema,
+  type PracticeAttemptInput,
   apiErrorSchema,
   socialRequestSchema,
   socialProvidersResponseSchema,
@@ -41,6 +45,22 @@ async function read(response: Response): Promise<unknown> {
 
 export function createApiClient(fetcher: typeof fetch = fetch) {
   return {
+    async saveAttempt(input: PracticeAttemptInput) {
+      return practiceSavedSchema.parse(
+        await read(
+          await fetcher('/api/v1/practice/attempts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(practiceAttemptSchema.parse(input)),
+          }),
+        ),
+      ).data;
+    },
+    async practiceProgress(signal?: AbortSignal) {
+      return practiceProgressSchema.parse(
+        await read(await fetcher('/api/v1/practice/progress', signal ? { signal } : {})),
+      ).data;
+    },
     async socialProviders() {
       return socialProvidersResponseSchema.parse(
         await read(await fetcher('/api/auth/social-providers')),

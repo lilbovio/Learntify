@@ -50,6 +50,12 @@ importers:
 
   adapters/email: {}
 
+  adapters/practice:
+    dependencies:
+      '@learntify/learning':
+        specifier: workspace:*
+        version: link:../../modules/learning
+
   adapters/preferences:
     dependencies:
       '@learntify/learning':
@@ -116,6 +122,9 @@ importers:
       '@learntify/learning':
         specifier: workspace:*
         version: link:../../modules/learning
+      '@learntify/practice-storage':
+        specifier: workspace:*
+        version: link:../../adapters/practice
       '@learntify/preferences-storage':
         specifier: workspace:*
         version: link:../../adapters/preferences

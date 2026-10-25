@@ -514,6 +514,19 @@ footer {
   resize: vertical;
   tab-size: 2;
 }
+.attempt-save {
+  padding-top: 1rem;
+  border-top: 1px solid var(--stroke);
+}
+.practice-overview {
+  margin-top: 1.5rem;
+}
+.practice-overview li + li {
+  margin-top: 1rem;
+}
+.practice-overview li p {
+  margin: 0.25rem 0;
+}
 .code-editor:focus-visible {
   outline: 3px solid #95543a;
   outline-offset: 3px;

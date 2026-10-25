@@ -1,4 +1,31 @@
 export type Draft = { id: string; ownerId: string; content: string; revision: number };
+export type PracticeAttempt = {
+  id: string;
+  lessonId: string;
+  lessonVersion: number;
+  code: string;
+  matched: boolean;
+};
+export type PracticeProgress = {
+  lessonId: string;
+  lessonVersion: number;
+  attempts: number;
+  matched: boolean;
+  lastPracticedAt: number;
+};
+export interface PracticeRepository {
+  save(
+    ownerId: string,
+    attempt: PracticeAttempt,
+    now: number,
+  ): Promise<'saved' | 'conflict' | 'limit'>;
+  progress(ownerId: string): Promise<PracticeProgress[]>;
+}
+
+// A simple revisit reminder, not an adaptive mastery or spaced-repetition score.
+export function reviewDueAt(progress: PracticeProgress): number {
+  return progress.lastPracticedAt + (progress.matched ? 24 * 60 * 60 * 1000 : 0);
+}
 export type LearningPreferences = {
   locale: 'en' | 'es';
   goal: 'foundations' | 'projects' | 'interviews';

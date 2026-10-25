@@ -8,7 +8,7 @@ The client lazily starts a dedicated Worker containing QuickJS compiled to WebAs
 
 Source is limited to 16,000 characters. Execution has a one-second VM interrupt deadline, a configured 16 MiB VM memory limit and 256 KiB stack limit. An independent five-second wall-clock timer terminates the Worker, including loading time. These are resource mitigations, not a guarantee of a fixed total browser memory footprint. Stop, lesson navigation and component unmount terminate the Worker. Output is capped at 50 lines and 1,000 characters per line. Objects are represented by type rather than traversed or invoking learner getters.
 
-Output matching is public practice feedback: it does not prove the intended technique was used, assess mastery or award a credential. Attempts and progress are not yet stored. Next, add account-owned attempt records, explicit client-reported provenance, and a review queue before broadening assessment claims.
+Output matching is public practice feedback: it does not prove the intended technique was used, assess mastery or award a credential. Signed-in learners can now explicitly save code snapshots and client-reported results to D1. Today shows practice counts and a basic review queue. See [practice progress](PRACTICE_PROGRESS.md). Continuous code-draft synchronization and an attempt-history browser remain unfinished.
 
 ## Verification
 

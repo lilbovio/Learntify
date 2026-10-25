@@ -139,6 +139,7 @@ export function LessonPage() {
             {lesson && lesson.id === currentLessonId && (
               <div hidden={loading || loadFailed}>
                 <LessonWorkspace
+                  accountId={accountId}
                   key={lesson.id + ':' + lesson.version}
                   lesson={lesson}
                   locale={locale}
