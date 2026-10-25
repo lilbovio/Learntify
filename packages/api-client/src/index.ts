@@ -154,11 +154,21 @@ export function createApiClient(fetcher: typeof fetch = fetch) {
       if (response.status === 401) return null;
       return accountResponseSchema.parse(await read(response)).data;
     },
-    async requestSignIn(email: string, adultConfirmed: boolean, locale: Locale, dedicated = false) {
+    async requestSignIn(
+      email: string,
+      adultConfirmed: boolean,
+      locale: Locale,
+      dedicated = false,
+      reauthenticate = false,
+    ) {
       const body = signInRequestSchema.parse({
         email,
         metadata: { adultConfirmed },
-        callbackURL: dedicated ? '/' + locale + '/today' : '/?lang=' + locale,
+        callbackURL: reauthenticate
+          ? '/' + locale + '/settings'
+          : dedicated
+            ? '/' + locale + '/today'
+            : '/?lang=' + locale,
         ...(dedicated
           ? {
               newUserCallbackURL: '/' + locale + '/start',

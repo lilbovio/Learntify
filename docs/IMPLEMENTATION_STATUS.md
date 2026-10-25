@@ -57,3 +57,5 @@ Passkey enrollment, sign-in and removal are implemented with Better Auth 1.7.12.
 ## Google/GitHub integration
 
 Optional server-only credentials enable provider buttons. Accounts must first sign in by email/passkey, then explicitly link the same verified email from settings within 15 minutes. Implicit linking and OAuth signup remain disabled. Requests cannot override scopes, redirects, ID tokens or signup policy. Access/refresh tokens are encrypted at rest. Tests simulate provider responses; real Google/GitHub consent and callback validation are still pending credentials. See [OAuth local testing](OAUTH_LOCAL_TESTING.md).
+
+Provider connection UX now confirms identity in place using a passkey when the backend requires recent authentication, then retries once. Switching accounts stops automatic linking. Email confirmation can return to settings without logout. Connected providers have explicit disabled states; there is no user-facing linking countdown. The backend freshness policy is preserved.

@@ -10,7 +10,17 @@ export const signInRequestSchema = z
   .object({
     email: z.string().email().max(254),
     metadata: z.object({ adultConfirmed: z.literal(true) }).strict(),
-    callbackURL: z.enum(['/', '/?lang=en', '/?lang=es', '/en/today', '/es/today']).optional(),
+    callbackURL: z
+      .enum([
+        '/',
+        '/?lang=en',
+        '/?lang=es',
+        '/en/today',
+        '/es/today',
+        '/en/settings',
+        '/es/settings',
+      ])
+      .optional(),
     newUserCallbackURL: z.enum(['/en/start', '/es/start']).optional(),
     errorCallbackURL: z.enum(['/en/auth', '/es/auth']).optional(),
   })

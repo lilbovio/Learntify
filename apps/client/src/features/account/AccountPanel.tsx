@@ -18,6 +18,8 @@ export function AccountPanel({
   standalone?: boolean;
 }) {
   const text = accountCopy[locale];
+  const reauthenticate =
+    standalone && new URL(window.location.href).searchParams.get('reauth') === '1';
   const [state, setState] = useState<'loading' | 'disabled' | 'guest' | 'member' | 'failed'>(
     'loading',
   );
@@ -53,7 +55,7 @@ export function AccountPanel({
         }
         const account = await api.currentAccount(controller.signal);
         if (!controller.signal.aborted) {
-          setState(account ? 'member' : 'guest');
+          setState(account && !reauthenticate ? 'member' : 'guest');
           onAccountChange(capabilities.cloudDrafts ? (account?.id ?? null) : null);
         }
       } catch {
@@ -61,7 +63,7 @@ export function AccountPanel({
       }
     })();
     return () => controller.abort();
-  }, [refresh, onAccountChange]);
+  }, [refresh, onAccountChange, reauthenticate]);
   if (state === 'loading') return standalone ? <p role="status">{text.loading}</p> : null;
   if (state === 'disabled') return standalone ? <p role="status">{text.unavailable}</p> : null;
   if (state === 'guest' && !standalone)
@@ -124,7 +126,7 @@ export function AccountPanel({
             setFailed(false);
             setSent(false);
             try {
-              await api.requestSignIn(email, adultConfirmed, locale, standalone);
+              await api.requestSignIn(email, adultConfirmed, locale, standalone, reauthenticate);
               setSent(true);
               setInvalidLink(false);
             } catch {
@@ -144,9 +146,15 @@ export function AccountPanel({
             </>
           ) : (
             <>
-              <p>{text.description}</p>
-              <SocialButtons locale={locale} />
-              {supportsPasskeys() && (
+              <p>
+                {reauthenticate
+                  ? locale === 'en'
+                    ? 'Confirm your identity by email. The link brings you back to account settings; you do not need to sign out.'
+                    : 'Confirma tu identidad por correo. El enlace te devuelve a configuración; no necesitas cerrar sesión.'
+                  : text.description}
+              </p>
+              {!reauthenticate && <SocialButtons locale={locale} />}
+              {!reauthenticate && supportsPasskeys() && (
                 <button
                   type="button"
                   disabled={busy}
