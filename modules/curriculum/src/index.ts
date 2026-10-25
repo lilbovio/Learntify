@@ -7,6 +7,7 @@ type LessonData = {
   objective: { en: string; es: string };
   explanation: { en: string[]; es: string[] };
   example: string;
+  coding: { prompt: { en: string; es: string }; expectedOutput: string[] };
   exercise: {
     id: string;
     prompt: { en: string; es: string };
@@ -42,6 +43,13 @@ const lessons: LessonData[] = [
       ],
     },
     example: 'console.log(3 + 2);',
+    coding: {
+      prompt: {
+        en: 'Change the addition to 3 + 4 and display its result.',
+        es: 'Cambia la suma a 3 + 4 y muestra el resultado.',
+      },
+      expectedOutput: ['7'],
+    },
     exercise: {
       id: 'predict-addition-v1',
       prompt: {
@@ -88,6 +96,13 @@ const lessons: LessonData[] = [
       ],
     },
     example: 'let score = 10;\nconsole.log(score);',
+    coding: {
+      prompt: {
+        en: 'After displaying 10, assign 20 to score and display score again.',
+        es: 'Después de mostrar 10, asigna 20 a score y vuelve a mostrar score.',
+      },
+      expectedOutput: ['10', '20'],
+    },
     exercise: {
       id: 'predict-variable-v1',
       prompt: {
@@ -125,6 +140,7 @@ export function getLesson(id: string, locale: ContentLocale) {
     objective: lesson.objective[locale],
     explanation: lesson.explanation[locale],
     example: lesson.example,
+    coding: { prompt: lesson.coding.prompt[locale], expectedOutput: lesson.coding.expectedOutput },
     exercise: {
       id: lesson.exercise.id,
       prompt: lesson.exercise.prompt[locale],

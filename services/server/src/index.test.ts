@@ -60,7 +60,7 @@ describe('public lesson API', () => {
     expect((await response.json()).data).toMatchObject({
       accounts: false,
       cloudDrafts: false,
-      codeExecution: false,
+      codeExecution: true,
       community: false,
     });
   });

@@ -15,6 +15,7 @@
     "@learntify/api-client": "workspace:*",
     "@learntify/api-contracts": "workspace:*",
     "better-auth": "1.7.12",
+    "quickjs-emscripten": "0.32.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

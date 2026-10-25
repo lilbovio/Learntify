@@ -92,6 +92,7 @@ export const lessonSchema = z.object({
   objective: z.string(),
   explanation: z.array(z.string()).min(1),
   example: z.string(),
+  coding: z.object({ prompt: z.string(), expectedOutput: z.array(z.string()) }),
   exercise: z.object({
     id: z.string(),
     prompt: z.string(),

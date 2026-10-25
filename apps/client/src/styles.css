@@ -492,6 +492,36 @@ footer {
   display: grid;
   gap: 1.25rem;
 }
+.code-exercise {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d8cfc4;
+}
+.code-editor {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 12rem;
+  margin: 0.75rem 0;
+  padding: 1rem;
+  border: 1px solid #b3a79b;
+  border-radius: 0.75rem;
+  background: #faf8f4;
+  color: #292721;
+  font:
+    1rem/1.65 Consolas,
+    monospace;
+  resize: vertical;
+  tab-size: 2;
+}
+.code-editor:focus-visible {
+  outline: 3px solid #95543a;
+  outline-offset: 3px;
+}
+.code-exercise pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .lesson-card {
   display: grid;
   gap: 0.6rem;

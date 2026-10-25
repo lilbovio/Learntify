@@ -86,7 +86,7 @@ export function createApp(
         accountDeletion: dependencies.auth?.options.user?.deleteUser?.enabled === true,
         preferences: Boolean(dependencies.auth && dependencies.preferences),
         cloudDrafts: Boolean(dependencies.auth && dependencies.drafts),
-        codeExecution: false,
+        codeExecution: true,
         community: false,
       },
       meta: { requestId: c.get('requestId') },
