@@ -1,4 +1,5 @@
 import { nextFoundations } from './next-foundations';
+import { structuredFoundations } from './structured-foundations';
 export type ContentLocale = 'en' | 'es';
 
 export type LessonData = {
@@ -127,6 +128,7 @@ const lessons: LessonData[] = [
     },
   },
   ...nextFoundations,
+  ...structuredFoundations,
 ];
 
 export const firstLessonId = lessons[0]!.id;

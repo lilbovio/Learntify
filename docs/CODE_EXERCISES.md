@@ -1,6 +1,6 @@
 # Code exercises
 
-The five bilingual foundation lessons include editable synchronous JavaScript exercises with expected output and immediate feedback. Guest code is saved by lesson/version in this browser, shared by anyone using that browser profile. Signed-in code synchronizes to an account-owned D1 draft after a 1.2-second pause. Account code is never copied into guest browser storage. Reset restores the lesson example.
+The nine bilingual foundation lessons include editable synchronous JavaScript exercises with expected output and immediate feedback. Guest code is saved by lesson/version in this browser, shared by anyone using that browser profile. Signed-in code synchronizes to an account-owned D1 draft after a 1.2-second pause. Account code is never copied into guest browser storage. Reset restores the lesson example.
 
 ## Execution boundary
 

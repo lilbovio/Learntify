@@ -10,6 +10,10 @@ describe('published starter lesson', () => {
       'working-with-text',
       'comparing-values',
       'making-decisions',
+      'repeating-with-loops',
+      'writing-functions',
+      'collecting-with-arrays',
+      'describing-with-objects',
     ]);
     expect(listLessons('es').map((lesson) => lesson.id)).toEqual(
       english.map((lesson) => lesson.id),
