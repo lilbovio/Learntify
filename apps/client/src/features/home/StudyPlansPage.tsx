@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createStudyPlanClient, type PlanActivity } from '@learntify/api-client';
 import type { Locale, StudyPlan } from '@learntify/api-contracts';
 import { PageFrame } from '../../shared/PageFrame';
@@ -41,12 +41,21 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [slugConflict, setSlugConflict] = useState(false);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error && !busy) {
+      errorRef.current?.focus();
+      errorRef.current?.scrollIntoView({ block: 'center' });
+    }
+  }, [error, busy]);
   const [activity, setActivity] = useState<PlanActivity[]>([]);
   const api = useMemo(
     () => createStudyPlanClient((item) => setActivity((items) => [item, ...items].slice(0, 12))),
     [],
   );
   function report(cause: unknown) {
+    setSlugConflict(cause instanceof ApiError && cause.status === 409);
     setError(
       cause instanceof ApiError && cause.status === 409
         ? es
@@ -78,6 +87,8 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
     return () => controller.abort();
   }, [api, page, refresh]);
   function fill(plan: StudyPlan | null) {
+    setError('');
+    setSlugConflict(false);
     setSelected(plan);
     setTitle(plan?.title ?? '');
     setSlug(plan?.slug ?? '');
@@ -88,6 +99,7 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setError('');
+    setSlugConflict(false);
     setMessage('');
     try {
       await action();
@@ -99,7 +111,6 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
   }
   return (
     <div className="study-plans">
-      {error && <p role="alert">{error}</p>}
       <p role="status">{message}</p>
       <section className="clay-card" aria-label={es ? 'Tus planes' : 'Your plans'}>
         <h2>{es ? 'Tus planes' : 'Your plans'}</h2>
@@ -157,6 +168,11 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
         <h2>
           {selected ? (es ? 'Editar plan' : 'Edit plan') : es ? 'Crear un plan' : 'Create a plan'}
         </h2>
+        {error && (
+          <p id="plan-error" className="plan-error" role="alert" tabIndex={-1} ref={errorRef}>
+            {error}
+          </p>
+        )}
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -189,8 +205,16 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
                 maxLength={60}
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
                 readOnly={Boolean(selected)}
+                aria-invalid={slugConflict || undefined}
+                aria-describedby={slugConflict ? 'plan-error' : undefined}
                 value={slug}
-                onChange={(event) => setSlug(event.target.value)}
+                onChange={(event) => {
+                  setSlug(event.target.value);
+                  if (slugConflict) {
+                    setSlugConflict(false);
+                    setError('');
+                  }
+                }}
               />
             </label>
             <small>

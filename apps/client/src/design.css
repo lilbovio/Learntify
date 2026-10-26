@@ -465,3 +465,10 @@ footer {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.plan-error {
+  padding: 1rem;
+  border: 2px solid #a33b24;
+  border-radius: 0.65rem;
+  background: #fff2ec;
+  color: #752515;
+}

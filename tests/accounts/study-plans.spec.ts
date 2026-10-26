@@ -44,6 +44,12 @@ test('study plans demonstrate real CRUD, conflicts and persistence after reload'
   await page.getByLabel('Slug', { exact: true }).fill('javascript-foundations');
   await page.getByRole('button', { name: 'Create plan', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText('This slug already exists. Choose another.');
+  await expect(page.getByRole('alert')).toBeInViewport();
+  await expect(page.getByRole('alert')).toBeFocused();
+  await expect(page.getByLabel('Slug', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Duplicate');
+  await page.getByLabel('Slug', { exact: true }).fill('another-plan');
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('button', { name: 'Ready for interviews', exact: true }).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Delete plan', exact: true }).click();
