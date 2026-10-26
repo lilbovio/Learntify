@@ -8,6 +8,7 @@ export type Route = {
     | 'today'
     | 'settings'
     | 'lesson'
+    | 'study-plans'
     | 'projects'
     | 'notebook'
     | 'learn'
@@ -37,6 +38,7 @@ export function readRoute(pathname: string, search = ''): Route {
       'progress',
       'notebook',
       'projects',
+      'study-plans',
     ].includes(parts[1]!)
   )
     return { locale, screen: parts[1] as Route['screen'] };

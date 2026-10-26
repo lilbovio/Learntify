@@ -62,6 +62,12 @@ importers:
         specifier: workspace:*
         version: link:../../modules/learning
 
+  adapters/study-plans:
+    dependencies:
+      '@learntify/study-plans':
+        specifier: workspace:*
+        version: link:../../modules/study-plans
+
   apps/client:
     dependencies:
       '@better-auth/passkey':
@@ -89,6 +95,8 @@ importers:
   modules/curriculum: {}
 
   modules/learning: {}
+
+  modules/study-plans: {}
 
   packages/api-client:
     dependencies:
@@ -128,6 +136,12 @@ importers:
       '@learntify/preferences-storage':
         specifier: workspace:*
         version: link:../../adapters/preferences
+      '@learntify/study-plan-storage':
+        specifier: workspace:*
+        version: link:../../adapters/study-plans
+      '@learntify/study-plans':
+        specifier: workspace:*
+        version: link:../../modules/study-plans
       better-auth:
         specifier: 1.7.12
         version: 1.7.12(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.0.5(@types/node@24.19.2)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)))

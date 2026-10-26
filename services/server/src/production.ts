@@ -1,3 +1,4 @@
+import { D1StudyPlanRepository, type StudyPlanDatabase } from '@learntify/study-plan-storage';
 import { createApp } from './index';
 import { D1PracticeRepository, type PracticeDatabase } from '@learntify/practice-storage';
 import { createAuth } from './auth/create-auth';
@@ -43,6 +44,7 @@ export async function serveAccounts(
   }
   return createApp({
     auth,
+    studyPlans: new D1StudyPlanRepository(configuration.database as unknown as StudyPlanDatabase),
     practice: new D1PracticeRepository(configuration.database as unknown as PracticeDatabase),
     admission,
     drafts: new D1DraftRepository(configuration.database as unknown as DraftDatabase),

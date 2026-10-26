@@ -19,6 +19,7 @@ export function AppHeader({
     ['progress', 'Progress', 'Progreso'],
     ['notebook', 'Notebook', 'Cuaderno'],
     ['projects', 'Projects', 'Proyectos'],
+    ['study-plans', 'Study plans', 'Planes'],
   ];
   return (
     <header className="topbar">

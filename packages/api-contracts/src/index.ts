@@ -207,3 +207,4 @@ export const apiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
   meta: z.object({ requestId: z.string() }),
 });
+export * from './study-plans';

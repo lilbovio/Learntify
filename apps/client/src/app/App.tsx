@@ -1,3 +1,4 @@
+import { StudyPlansPage } from '../features/home/StudyPlansPage';
 import { readRoute } from '../shared/routes';
 import { LessonPage } from './LessonPage';
 import { WelcomePage } from '../features/home/WelcomePage';
@@ -13,6 +14,8 @@ import { ProjectsPage } from '../features/home/ProjectsPage';
 export function App() {
   const route = readRoute(window.location.pathname, window.location.search);
   switch (route.screen) {
+    case 'study-plans':
+      return <StudyPlansPage locale={route.locale} />;
     case 'projects':
       return <ProjectsPage locale={route.locale} />;
     case 'notebook':

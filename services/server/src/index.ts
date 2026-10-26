@@ -1,3 +1,5 @@
+import { StudyPlanService, type StudyPlanRepository } from '@learntify/study-plans';
+import { StudyPlanController } from './study-plans/controller';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import {
@@ -27,6 +29,7 @@ export function createApp(
     drafts?: DraftRepository;
     preferences?: PreferencesRepository;
     practice?: PracticeRepository;
+    studyPlans?: StudyPlanRepository;
     admission?: AccountAdmission;
   } = {},
 ) {
@@ -202,6 +205,14 @@ export function createApp(
   });
 
   if (dependencies.auth) {
+    if (dependencies.studyPlans)
+      app.route(
+        '/api/v1/study-plans',
+        new StudyPlanController(
+          dependencies.auth,
+          new StudyPlanService(dependencies.studyPlans),
+        ).routes(),
+      );
     app.route('/', createAccountRoutes(dependencies.auth, dependencies.admission));
     if (dependencies.practice)
       app.route('/', createPracticeRoutes(dependencies.auth, dependencies.practice));

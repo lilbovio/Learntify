@@ -1,6 +1,10 @@
 # Implementation status
 
-Updated October 25, 2026.
+Updated October 26, 2026.
+
+## Study Plans coursework module
+
+Study Plans now has authenticated GET list, GET by ID, POST, PUT and DELETE routes backed by D1, a bilingual CRUD screen, and an optional real-request activity panel for demonstrations. The controller, domain service/entity and storage adapter follow package dependency boundaries. Migration 0007 adds owner-scoped uniqueness and account-deletion cascading. See [the demo guide](college/DEMO.md), [OpenAPI contract](college/openapi-study-plans.yaml), and [diagrams](college/diagrams.md). This delivers a focused coursework module; it does not change the alpha release stage.
 
 ## Delivery stage
 

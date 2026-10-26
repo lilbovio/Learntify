@@ -1,0 +1,476 @@
+# Implemented Study Plans CRUD contract; see DEMO.md.
+'openapi': '3.0.3'
+'info':
+  'title': 'Learntify Study Plans API'
+  'version': '0.1.0'
+  'description': 'Implemented coursework contract. Reuses the existing local account session. A trusted Origin is required for writes. This module maps validation errors to 400 to match the course rubric.'
+  'contact':
+    'name': 'Juan Pablo Bovio Vallejo'
+  'license':
+    'name': 'MIT'
+'servers':
+  - 'url': 'http://localhost:8788'
+    'description': 'Demo on the local account-enabled Worker. No production deployment.'
+'tags':
+  - 'name': 'Study plans'
+    'description': 'Private learning plans owned by the authenticated account.'
+'security':
+  - 'sessionCookie': []
+'paths':
+  '/api/v1/study-plans':
+    'get':
+      'tags':
+        - 'Study plans'
+      'summary': 'List my study plans'
+      'operationId': 'listStudyPlans'
+      'description': 'Owner-filtered, ordered by createdAt descending then id descending. Empty or out-of-range pages return 200 with data: []. Reject unknown query parameters.'
+      'parameters':
+        - 'name': 'page'
+          'in': 'query'
+          'schema':
+            'type': 'integer'
+            'minimum': 1
+            'maximum': 10000
+            'default': 1
+        - 'name': 'limit'
+          'in': 'query'
+          'schema':
+            'type': 'integer'
+            'minimum': 1
+            'maximum': 100
+            'default': 20
+        - 'name': 'status'
+          'in': 'query'
+          'schema':
+            'type': 'string'
+            'enum':
+              - 'draft'
+              - 'active'
+              - 'completed'
+      'responses':
+        '200':
+          'description': 'A page of the current account study plans.'
+          'content':
+            'application/json':
+              'schema':
+                '$ref': '#/components/schemas/StudyPlanListResponse'
+        '400':
+          '$ref': '#/components/responses/BadRequest'
+        '401':
+          '$ref': '#/components/responses/Unauthorized'
+        '500':
+          '$ref': '#/components/responses/InternalError'
+    'post':
+      'tags':
+        - 'Study plans'
+      'summary': 'Create a study plan'
+      'operationId': 'createStudyPlan'
+      'description': 'Server generates id, ownerId and timestamps. Initial status is draft. Duplicate owner plus slug is enforced atomically by the database.'
+      'parameters':
+        - '$ref': '#/components/parameters/Origin'
+      'requestBody':
+        'required': true
+        'content':
+          'application/json':
+            'schema':
+              '$ref': '#/components/schemas/CreateStudyPlan'
+            'example':
+              'slug': 'javascript-foundations'
+              'title': 'JavaScript foundations'
+              'description': 'Practice functions and arrays'
+              'weeklyMinutes': 180
+      'responses':
+        '201':
+          'description': 'Created study plan.'
+          'content':
+            'application/json':
+              'schema':
+                '$ref': '#/components/schemas/StudyPlanResponse'
+          'headers':
+            'Location':
+              'description': 'Relative URI of the created study plan.'
+              'schema':
+                'type': 'string'
+              'example': '/api/v1/study-plans/6f56c4bb-f15f-4c9d-bbc7-e32c64667f43'
+        '400':
+          '$ref': '#/components/responses/BadRequest'
+        '401':
+          '$ref': '#/components/responses/Unauthorized'
+        '409':
+          '$ref': '#/components/responses/Conflict'
+        '500':
+          '$ref': '#/components/responses/InternalError'
+        '403':
+          '$ref': '#/components/responses/Forbidden'
+        '413':
+          '$ref': '#/components/responses/TooLarge'
+  '/api/v1/study-plans/{id}':
+    'parameters':
+      - '$ref': '#/components/parameters/StudyPlanId'
+    'get':
+      'tags':
+        - 'Study plans'
+      'summary': 'Get one of my study plans'
+      'operationId': 'getStudyPlan'
+      'responses':
+        '200':
+          'description': 'Requested study plan.'
+          'content':
+            'application/json':
+              'schema':
+                '$ref': '#/components/schemas/StudyPlanResponse'
+        '400':
+          '$ref': '#/components/responses/BadRequest'
+        '401':
+          '$ref': '#/components/responses/Unauthorized'
+        '404':
+          '$ref': '#/components/responses/NotFound'
+        '500':
+          '$ref': '#/components/responses/InternalError'
+    'put':
+      'tags':
+        - 'Study plans'
+      'summary': 'Replace the editable fields of my study plan'
+      'operationId': 'replaceStudyPlan'
+      'description': 'Full replacement of title, description, weeklyMinutes and status. No upsert. Identity, slug, owner and creation timestamp cannot be submitted. Last-write-wins.'
+      'parameters':
+        - '$ref': '#/components/parameters/Origin'
+      'requestBody':
+        'required': true
+        'content':
+          'application/json':
+            'schema':
+              '$ref': '#/components/schemas/ReplaceStudyPlan'
+            'example':
+              'title': 'JavaScript foundations and projects'
+              'description': 'Finish the basket calculator'
+              'weeklyMinutes': 240
+              'status': 'active'
+      'responses':
+        '200':
+          'description': 'Updated study plan.'
+          'content':
+            'application/json':
+              'schema':
+                '$ref': '#/components/schemas/StudyPlanResponse'
+        '400':
+          '$ref': '#/components/responses/BadRequest'
+        '401':
+          '$ref': '#/components/responses/Unauthorized'
+        '404':
+          '$ref': '#/components/responses/NotFound'
+        '500':
+          '$ref': '#/components/responses/InternalError'
+        '403':
+          '$ref': '#/components/responses/Forbidden'
+        '413':
+          '$ref': '#/components/responses/TooLarge'
+    'delete':
+      'tags':
+        - 'Study plans'
+      'summary': 'Delete one of my study plans'
+      'operationId': 'deleteStudyPlan'
+      'description': 'Deletes only the plan. Lessons, attempts and notes are unaffected. Success has no response body. A repeated delete returns 404.'
+      'parameters':
+        - '$ref': '#/components/parameters/Origin'
+      'responses':
+        '204':
+          'description': 'Deleted successfully. The response body is empty.'
+        '400':
+          '$ref': '#/components/responses/BadRequest'
+        '401':
+          '$ref': '#/components/responses/Unauthorized'
+        '404':
+          '$ref': '#/components/responses/NotFound'
+        '500':
+          '$ref': '#/components/responses/InternalError'
+        '403':
+          '$ref': '#/components/responses/Forbidden'
+'components':
+  'securitySchemes':
+    'sessionCookie':
+      'type': 'apiKey'
+      'in': 'cookie'
+      'name': 'better-auth.session_token'
+      'description': 'Default local Better Auth session cookie, issued through the existing sign-in flow. Verify actual cookie naming if configuration or secure deployment changes. Do not paste session cookies into documentation.'
+  'parameters':
+    'StudyPlanId':
+      'name': 'id'
+      'in': 'path'
+      'required': true
+      'description': 'Valid UUID. Another owner record is indistinguishable from a missing record.'
+      'schema':
+        'type': 'string'
+        'format': 'uuid'
+    'Origin':
+      'name': 'Origin'
+      'in': 'header'
+      'required': true
+      'description': 'Must exactly equal the configured application origin. The local account profile uses http://localhost:5174. Browser clients set this automatically; API demo clients must send it. Missing/mismatched values are 403.'
+      'schema':
+        'type': 'string'
+      'example': 'http://localhost:5174'
+  'schemas':
+    'StudyPlan':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'id'
+        - 'ownerId'
+        - 'slug'
+        - 'title'
+        - 'description'
+        - 'weeklyMinutes'
+        - 'status'
+        - 'createdAt'
+        - 'updatedAt'
+      'properties':
+        'id':
+          'type': 'string'
+          'format': 'uuid'
+          'readOnly': true
+        'ownerId':
+          'type': 'string'
+          'readOnly': true
+        'slug':
+          'type': 'string'
+          'minLength': 3
+          'maxLength': 60
+          'pattern': '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          'description': 'Immutable. Unique within the authenticated owner.'
+        'title':
+          'type': 'string'
+          'minLength': 1
+          'maxLength': 120
+          'description': 'Trim leading/trailing whitespace before validating. Must not be blank.'
+        'description':
+          'type': 'string'
+          'maxLength': 2000
+        'weeklyMinutes':
+          'type': 'integer'
+          'minimum': 15
+          'maximum': 1200
+        'status':
+          'type': 'string'
+          'enum':
+            - 'draft'
+            - 'active'
+            - 'completed'
+        'createdAt':
+          'type': 'string'
+          'format': 'date-time'
+          'readOnly': true
+        'updatedAt':
+          'type': 'string'
+          'format': 'date-time'
+          'readOnly': true
+    'CreateStudyPlan':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'slug'
+        - 'title'
+        - 'description'
+        - 'weeklyMinutes'
+      'properties':
+        'slug':
+          'type': 'string'
+          'minLength': 3
+          'maxLength': 60
+          'pattern': '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          'description': 'Immutable. Unique within the authenticated owner.'
+        'title':
+          'type': 'string'
+          'minLength': 1
+          'maxLength': 120
+          'description': 'Trim leading/trailing whitespace before validating. Must not be blank.'
+        'description':
+          'type': 'string'
+          'maxLength': 2000
+        'weeklyMinutes':
+          'type': 'integer'
+          'minimum': 15
+          'maximum': 1200
+    'ReplaceStudyPlan':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'title'
+        - 'description'
+        - 'weeklyMinutes'
+        - 'status'
+      'properties':
+        'title':
+          'type': 'string'
+          'minLength': 1
+          'maxLength': 120
+          'description': 'Trim leading/trailing whitespace before validating. Must not be blank.'
+        'description':
+          'type': 'string'
+          'maxLength': 2000
+        'weeklyMinutes':
+          'type': 'integer'
+          'minimum': 15
+          'maximum': 1200
+        'status':
+          'type': 'string'
+          'enum':
+            - 'draft'
+            - 'active'
+            - 'completed'
+    'Error':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'error'
+        - 'meta'
+      'properties':
+        'error':
+          'type': 'object'
+          'additionalProperties': false
+          'required':
+            - 'code'
+            - 'message'
+          'properties':
+            'code':
+              'type': 'string'
+            'message':
+              'type': 'string'
+        'meta':
+          'type': 'object'
+          'additionalProperties': false
+          'required':
+            - 'requestId'
+          'properties':
+            'requestId':
+              'type': 'string'
+    'StudyPlanResponse':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'data'
+        - 'meta'
+      'properties':
+        'data':
+          '$ref': '#/components/schemas/StudyPlan'
+        'meta':
+          'type': 'object'
+          'additionalProperties': false
+          'required':
+            - 'requestId'
+          'properties':
+            'requestId':
+              'type': 'string'
+    'StudyPlanListResponse':
+      'type': 'object'
+      'additionalProperties': false
+      'required':
+        - 'data'
+        - 'meta'
+      'properties':
+        'data':
+          'type': 'array'
+          'items':
+            '$ref': '#/components/schemas/StudyPlan'
+        'meta':
+          'type': 'object'
+          'additionalProperties': false
+          'required':
+            - 'requestId'
+            - 'page'
+            - 'limit'
+          'properties':
+            'requestId':
+              'type': 'string'
+            'page':
+              'type': 'integer'
+              'minimum': 1
+            'limit':
+              'type': 'integer'
+              'minimum': 1
+              'maximum': 100
+  'responses':
+    'BadRequest':
+      'description': 'Invalid UUID, query, JSON, unknown fields or invalid body values.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'INVALID_INPUT'
+              'message': 'Invalid request.'
+            'meta':
+              'requestId': 'example-request-id'
+    'Unauthorized':
+      'description': 'Session missing or expired.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'UNAUTHENTICATED'
+              'message': 'Sign in to continue.'
+            'meta':
+              'requestId': 'example-request-id'
+    'NotFound':
+      'description': 'No study plan with this ID belongs to the authenticated account.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'NOT_FOUND'
+              'message': 'Study plan not found.'
+            'meta':
+              'requestId': 'example-request-id'
+    'Conflict':
+      'description': 'Another study plan for this owner already uses this slug.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'SLUG_CONFLICT'
+              'message': 'A study plan already uses this slug.'
+            'meta':
+              'requestId': 'example-request-id'
+    'InternalError':
+      'description': 'Unexpected application or database error. No stack traces or SQL are returned.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'INTERNAL_ERROR'
+              'message': 'Unable to complete the request.'
+            'meta':
+              'requestId': 'example-request-id'
+    'Forbidden':
+      'description': 'Origin is missing or does not match the configured application origin for a write.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'INVALID_ORIGIN'
+              'message': 'Use the application origin.'
+            'meta':
+              'requestId': 'example-request-id'
+    'TooLarge':
+      'description': 'Request body exceeds 16384 bytes.'
+      'content':
+        'application/json':
+          'schema':
+            '$ref': '#/components/schemas/Error'
+          'example':
+            'error':
+              'code': 'PAYLOAD_TOO_LARGE'
+              'message': 'Request body is too large.'
+            'meta':
+              'requestId': 'example-request-id'

@@ -1,3 +1,4 @@
+import { D1StudyPlanRepository, type StudyPlanDatabase } from '@learntify/study-plan-storage';
 import type { D1Database } from '@cloudflare/workers-types';
 import { createAuth } from './auth/create-auth';
 import { createApp } from './index';
@@ -39,6 +40,7 @@ export default {
     await auth.$context;
     return createApp({
       auth,
+      studyPlans: new D1StudyPlanRepository(env.DB as unknown as StudyPlanDatabase),
       practice: new D1PracticeRepository(env.DB as unknown as PracticeDatabase),
       preferences: new D1PreferencesRepository(env.DB as unknown as PreferencesDatabase),
       drafts: new D1DraftRepository(env.DB as unknown as DraftDatabase),
