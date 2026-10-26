@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createApiClient } from '@learntify/api-client';
+import { ApiError, createApiClient } from '@learntify/api-client';
 import type { LessonListItem, Locale, PracticeProgress } from '@learntify/api-contracts';
 import { lessonPath } from '../../shared/routes';
 
@@ -15,17 +15,23 @@ export function PracticeOverview({
 }) {
   const [rows, setRows] = useState<PracticeProgress[]>();
   const [failed, setFailed] = useState(false);
+  const [expired, setExpired] = useState(false);
   const [reload, setReload] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     setFailed(false);
+    setExpired(false);
     void api
       .practiceProgress(controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) setRows(data);
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setFailed(true);
+          setExpired(cause instanceof ApiError && cause.status === 401);
+          setRows(undefined);
+        }
       });
     const refresh = () => setReload((value) => value + 1);
     window.addEventListener('focus', refresh);
@@ -75,7 +81,16 @@ export function PracticeOverview({
       <h2>{text.title}</h2>
       {failed ? (
         <div role="alert">
-          <p>{text.error}</p>
+          <p>
+            {expired
+              ? locale === 'en'
+                ? 'Sign in again to load your practice.'
+                : 'Inicia sesión de nuevo para cargar tu práctica.'
+              : text.error}
+          </p>
+          {expired && (
+            <a href={`/${locale}/auth`}>{locale === 'en' ? 'Sign in' : 'Iniciar sesión'}</a>
+          )}
           <button onClick={() => setReload((n) => n + 1)}>{text.retry}</button>
         </div>
       ) : !current ? (

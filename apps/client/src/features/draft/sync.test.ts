@@ -79,3 +79,27 @@ it('does not refresh over unsaved edits and cancels scheduled work on disposal',
   await vi.advanceTimersByTimeAsync(1200);
   expect(port.saveDraft).not.toHaveBeenCalled();
 });
+
+it('preserves edits on expired sessions and clears recovery state after retry', async () => {
+  const { port, sync } = fixture();
+  port.saveDraft
+    .mockRejectedValueOnce(new ApiError('UNAUTHENTICATED', 401))
+    .mockResolvedValueOnce({ revision: 2 });
+  await sync.start();
+  sync.edit('keep this');
+  await vi.advanceTimersByTimeAsync(1200);
+  expect(sync.state).toMatchObject({
+    content: 'keep this',
+    dirty: true,
+    sessionExpired: true,
+    status: 'error',
+  });
+  await sync.retry();
+  expect(sync.state).toMatchObject({
+    content: 'keep this',
+    dirty: false,
+    sessionExpired: false,
+    status: 'saved',
+  });
+  sync.dispose();
+});

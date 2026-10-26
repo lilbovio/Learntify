@@ -472,3 +472,60 @@ footer {
   background: #fff2ec;
   color: #752515;
 }
+
+/* Shared feedback and form rhythm for the alpha account and learning screens. */
+.session-recovery {
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid var(--sage);
+  border-radius: 0.75rem;
+  background: var(--sage-soft);
+}
+.session-recovery p {
+  margin-top: 0;
+}
+.unsaved-hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--sage);
+  outline-offset: 3px;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+input[aria-invalid='true'] {
+  border: 2px solid #a33b24;
+}
+.plan-actions button,
+.plan-list button {
+  background: var(--surface);
+  color: var(--accent);
+}
+.preferences-form,
+.account-deletion form {
+  display: grid;
+  gap: 0.85rem;
+}
+.preferences-form > button,
+.account-deletion button {
+  margin-top: 0.5rem;
+}
+.study-plans .clay-card {
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

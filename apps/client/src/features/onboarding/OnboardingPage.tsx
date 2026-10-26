@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { createApiClient } from '@learntify/api-client';
+import { ApiError, createApiClient } from '@learntify/api-client';
 import type { LearningPreferences, Locale } from '@learntify/api-contracts';
 import { PageFrame } from '../../shared/PageFrame';
 import { readGuestPreferences, saveGuestPreferences } from './preferences';
 import { onboardingCopy } from './copy';
+import { useUnsavedChanges } from '../../shared/useUnsavedChanges';
+import { SessionRecovery } from '../../shared/SessionRecovery';
 
 const api = createApiClient();
 export function OnboardingPage({ locale }: { locale: Locale }) {
@@ -17,6 +19,13 @@ export function OnboardingPage({ locale }: { locale: Locale }) {
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [baseline, setBaseline] = useState(JSON.stringify(values));
+  const { allowNavigation } = useUnsavedChanges(
+    JSON.stringify(values) !== baseline || busy,
+    locale,
+  );
   useEffect(() => {
     const controller = new AbortController();
     setMode('loading');
@@ -35,7 +44,12 @@ export function OnboardingPage({ locale }: { locale: Locale }) {
           }
         }
         if (!controller.signal.aborted) {
-          if (stored) setValues({ ...stored, locale });
+          const initial = stored
+            ? { ...stored, locale }
+            : { locale, goal: 'foundations' as const, weeklyMinutes: null };
+          setValues(initial);
+          setBaseline(JSON.stringify(initial));
+          setOwnerId(account?.id ?? null);
           setMode(account ? 'member' : 'guest');
         }
       } catch {
@@ -62,10 +76,16 @@ export function OnboardingPage({ locale }: { locale: Locale }) {
             setBusy(true);
             setFailed(false);
             try {
-              if (mode === 'member') await api.savePreferences(values);
-              else saveGuestPreferences(localStorage, values);
+              if (mode === 'member') {
+                const account = await api.currentAccount();
+                if (!account) throw new ApiError('UNAUTHENTICATED', 401);
+                if (account.id !== ownerId) throw new ApiError('ACCOUNT_CHANGED', 401);
+                await api.savePreferences(values);
+              } else saveGuestPreferences(localStorage, values);
+              allowNavigation();
               window.location.assign('/' + values.locale + '/today');
-            } catch {
+            } catch (cause) {
+              setExpired(cause instanceof ApiError && cause.status === 401);
               setFailed(true);
               setBusy(false);
             }
@@ -120,6 +140,7 @@ export function OnboardingPage({ locale }: { locale: Locale }) {
             {busy ? text.saving : text.save}
           </button>
           {failed && <p role="alert">{text.error}</p>}
+          {expired && <SessionRecovery locale={locale} />}
         </form>
       )}
       <p>

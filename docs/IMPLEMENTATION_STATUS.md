@@ -6,6 +6,10 @@ Updated October 26, 2026.
 
 Study Plans now has authenticated GET list, GET by ID, POST, PUT and DELETE routes backed by D1, a bilingual CRUD screen, and an optional real-request activity panel for demonstrations. The controller, domain service/entity and storage adapter follow package dependency boundaries. Migration 0007 adds owner-scoped uniqueness and account-deletion cascading. See [the demo guide](college/DEMO.md), [OpenAPI contract](college/openapi-study-plans.yaml), and [diagrams](college/diagrams.md). This delivers a focused coursework module; it does not change the alpha release stage.
 
+## Alpha stabilization
+
+Unsaved study-plan and preference edits now have navigation/discard protection. Session recovery keeps current tab input available, with account checks before retrying plan/preference saves. Draft sync and saved attempts expose sign-in recovery, and failed list requests are distinguished from empty results. Shared form spacing, focus indicators, invalid states, mobile layouts and reduced-motion behavior received an incremental pass. The learning-to-plan rehearsal covers failed/expired saves and cancelled navigation. See [alpha acceptance and preview handoff](ALPHA_ACCEPTANCE.md) for remaining environment gates.
+
 ## Delivery stage
 
 Current stage: functional alpha for restricted testing, not a production release candidate. The complete account → lesson → execute → save attempt → review flow is implemented. Eleven bilingual lessons plus a guided basket-calculator project cover values, variables, strings, comparisons, conditionals, loops, functions, arrays and objects, followed by applied basket-total and study-summary exercises. This remains a small beginning of the intended curriculum.

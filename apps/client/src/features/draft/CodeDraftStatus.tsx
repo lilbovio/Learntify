@@ -1,3 +1,4 @@
+import { SessionRecovery } from '../../shared/SessionRecovery';
 import type { Locale } from '@learntify/api-contracts';
 import type { DraftState } from './sync';
 
@@ -41,6 +42,7 @@ export function CodeDraftStatus({
       <p role={state?.status === 'error' || state?.status === 'conflict' ? 'alert' : 'status'}>
         {text[state?.status ?? 'loading']}
       </p>
+      {state?.sessionExpired && <SessionRecovery locale={locale} />}
       {state?.status === 'error' && <button onClick={retry}>{text.retry}</button>}
       {state?.status === 'conflict' && state.remote && (
         <div>

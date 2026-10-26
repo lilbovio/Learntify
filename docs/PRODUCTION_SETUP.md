@@ -30,8 +30,10 @@ After remaining signup safeguards, quotas and recovery procedures are implemente
 2. The static client and API route under the same origin, with `/api/*` routed to the Worker and localized client routes falling back to the SPA. Separate client/server code does not require separate browser origins. Cross-origin credentialed requests are not supported by the current client.
 3. A domain you control and a verified Resend sender. Set `EMAIL_FROM` only after verification. The registrar purchase is separate from hosting.
 4. A newly generated random auth secret and a dedicated Resend key through the provider's secret storage. Never put credentials in git, screenshots, issue reports or chat. `AUTH_SECRET` must contain at least 32 characters; length validation does not establish randomness.
-5. Google/GitHub OAuth registrations and Turnstile only after their integrations and exact callbacks are implemented. These are not wired into this configuration yet.
+5. Google/GitHub OAuth registrations for the selected HTTPS origin. Optional GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET and GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET pairs are supported by the current configuration; verify their exact callbacks before preview use. Turnstile remains deferred.
 
 Before any public release, validate deployed CPU usage, admission and write limits, mail limits, backup restoration and deletion replay, and the static lesson fallback during API exhaustion. Production deletion stays disabled until its full retention workflow is ready. No deployed resources or live email were created by the code changes.
 
 See [external services](EXTERNAL_SERVICES.md) for the service inventory and [local accounts](LOCAL_ACCOUNTS.md) to test now without external accounts.
+
+See [alpha acceptance and restricted-preview handoff](ALPHA_ACCEPTANCE.md) for the current rehearsal and pending environment checks.

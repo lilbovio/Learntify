@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ApiError, createApiClient } from '@learntify/api-client';
 import type { Locale, PracticeAttemptInput } from '@learntify/api-contracts';
+import { SessionRecovery } from '../../shared/SessionRecovery';
 
 const api = createApiClient();
 export function SaveAttempt({ input, locale }: { input: PracticeAttemptInput; locale: Locale }) {
   const [state, setState] = useState<'ready' | 'saving' | 'saved' | 'error' | 'limit' | 'changed'>(
     'ready',
   );
+  const [expired, setExpired] = useState(false);
   const text =
     locale === 'en'
       ? {
@@ -29,15 +31,16 @@ export function SaveAttempt({ input, locale }: { input: PracticeAttemptInput; lo
         };
   async function save() {
     setState('saving');
+    setExpired(false);
     try {
       await api.saveAttempt(input);
       setState('saved');
     } catch (error) {
+      setExpired(error instanceof ApiError && error.status === 401);
       setState(
         error instanceof ApiError && error.code === 'PRACTICE_LIMIT'
           ? 'limit'
-          : error instanceof ApiError &&
-              ['ACCOUNT_CHANGED', 'STALE_LESSON', 'UNAUTHENTICATED'].includes(error.code)
+          : error instanceof ApiError && ['ACCOUNT_CHANGED', 'STALE_LESSON'].includes(error.code)
             ? 'changed'
             : 'error',
       );
@@ -56,6 +59,7 @@ export function SaveAttempt({ input, locale }: { input: PracticeAttemptInput; lo
         <p role={state === 'saved' ? 'status' : 'alert'}>{text[state]}</p>
       )}
       {state === 'saved' && <a href={'/' + locale + '/today'}>{text.progress}</a>}
+      {expired && <SessionRecovery locale={locale} />}
     </div>
   );
 }

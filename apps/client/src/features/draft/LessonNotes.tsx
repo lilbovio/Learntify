@@ -1,3 +1,4 @@
+import { SessionRecovery } from '../../shared/SessionRecovery';
 import { useEffect, useRef, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
@@ -60,6 +61,7 @@ export function LessonNotes({
       <p role={state.status === 'error' || state.status === 'conflict' ? 'alert' : 'status'}>
         {text[state.status]}
       </p>
+      {state.sessionExpired && <SessionRecovery locale={locale} />}
       {state.status === 'error' && (
         <button
           onClick={() => {

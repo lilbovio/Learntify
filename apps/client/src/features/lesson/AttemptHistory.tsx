@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createApiClient } from '@learntify/api-client';
+import { ApiError, createApiClient } from '@learntify/api-client';
+import { SessionRecovery } from '../../shared/SessionRecovery';
 import type { Locale, SavedAttempt } from '@learntify/api-contracts';
 const api = createApiClient();
 
@@ -17,6 +18,7 @@ export function AttemptHistory({
   const [opened, setOpened] = useState(false);
   const [rows, setRows] = useState<SavedAttempt[]>();
   const [failed, setFailed] = useState(false);
+  const [expired, setExpired] = useState(false);
   const [reload, setReload] = useState(0);
   const text =
     locale === 'en'
@@ -48,14 +50,18 @@ export function AttemptHistory({
     if (!opened) return;
     const controller = new AbortController();
     setFailed(false);
+    setExpired(false);
     setRows(undefined);
     void api
       .attemptHistory(lessonId, controller.signal)
       .then((value) => {
         if (!controller.signal.aborted) setRows(value);
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setFailed(true);
+          setExpired(cause instanceof ApiError && cause.status === 401);
+        }
       });
     return () => controller.abort();
   }, [lessonId, opened, reload]);
@@ -63,6 +69,7 @@ export function AttemptHistory({
     <details className="attempt-history" onToggle={(event) => setOpened(event.currentTarget.open)}>
       <summary>{text.title}</summary>
       <p>{text.hint}</p>
+      {expired && <SessionRecovery locale={locale} />}
       <button onClick={() => setReload((n) => n + 1)}>{text.refresh}</button>
       {failed ? (
         <p role="alert">{text.error}</p>

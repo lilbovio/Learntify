@@ -50,6 +50,7 @@ test('study plans demonstrate real CRUD, conflicts and persistence after reload'
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Duplicate');
   await page.getByLabel('Slug', { exact: true }).fill('another-plan');
   await expect(page.getByRole('alert')).toHaveCount(0);
+  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Ready for interviews', exact: true }).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Delete plan', exact: true }).click();

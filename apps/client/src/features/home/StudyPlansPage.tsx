@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createStudyPlanClient, type PlanActivity } from '@learntify/api-client';
+import {
+  ApiError,
+  createApiClient,
+  createStudyPlanClient,
+  type PlanActivity,
+} from '@learntify/api-client';
 import type { Locale, StudyPlan } from '@learntify/api-contracts';
 import { PageFrame } from '../../shared/PageFrame';
 import { AccountPanel } from '../account/AccountPanel';
+import { useUnsavedChanges } from '../../shared/useUnsavedChanges';
+import { SessionRecovery } from '../../shared/SessionRecovery';
 
 export function StudyPlansPage({ locale }: { locale: Locale }) {
   const [account, setAccount] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
   return (
     <PageFrame locale={locale} title={locale === 'en' ? 'Study plans' : 'Planes de estudio'}>
       <p>
@@ -13,9 +21,9 @@ export function StudyPlansPage({ locale }: { locale: Locale }) {
           ? 'Make room for learning. Set a weekly goal and keep your plans in one place.'
           : 'Haz espacio para aprender. Define una meta semanal y organiza tus planes.'}
       </p>
-      <AccountPanel locale={locale} onAccountChange={setAccount} unsavedNotes={false} />
+      <AccountPanel locale={locale} onAccountChange={setAccount} unsavedNotes={dirty} />
       {account ? (
-        <PlanWorkspace key={account} locale={locale} />
+        <PlanWorkspace key={account} locale={locale} ownerId={account} onDirtyChange={setDirty} />
       ) : (
         <p>
           {locale === 'en'
@@ -26,7 +34,15 @@ export function StudyPlansPage({ locale }: { locale: Locale }) {
     </PageFrame>
   );
 }
-function PlanWorkspace({ locale }: { locale: Locale }) {
+function PlanWorkspace({
+  locale,
+  ownerId,
+  onDirtyChange,
+}: {
+  locale: Locale;
+  ownerId: string;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const es = locale === 'es';
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [selected, setSelected] = useState<StudyPlan | null>(null);
@@ -42,6 +58,19 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [slugConflict, setSlugConflict] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const [listFailed, setListFailed] = useState(false);
+  const dirty =
+    title !== (selected?.title ?? '') ||
+    slug !== (selected?.slug ?? '') ||
+    description !== (selected?.description ?? '') ||
+    minutes !== (selected?.weeklyMinutes ?? 120) ||
+    status !== (selected?.status ?? 'draft');
+  const { confirmDiscard } = useUnsavedChanges(dirty || busy, locale);
+  useEffect(() => {
+    onDirtyChange(dirty || busy);
+    return () => onDirtyChange(false);
+  }, [dirty, busy, onDirtyChange]);
   const errorRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     if (error && !busy) {
@@ -55,9 +84,10 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
     [],
   );
   function report(cause: unknown) {
-    setSlugConflict(cause instanceof ApiError && cause.status === 409);
+    setExpired(cause instanceof ApiError && cause.status === 401);
+    setSlugConflict(cause instanceof ApiError && cause.code === 'SLUG_CONFLICT');
     setError(
-      cause instanceof ApiError && cause.status === 409
+      cause instanceof ApiError && cause.code === 'SLUG_CONFLICT'
         ? es
           ? 'Este identificador ya existe. Elige otro.'
           : 'This slug already exists. Choose another.'
@@ -65,21 +95,29 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
           ? es
             ? 'Tu sesión terminó. Inicia sesión de nuevo.'
             : 'Your session expired. Sign in again.'
-          : es
-            ? 'No se pudo completar la solicitud. Inténtalo de nuevo.'
-            : 'The request could not be completed. Try again.',
+          : cause instanceof ApiError && cause.code === 'ACCOUNT_CHANGED'
+            ? es
+              ? 'La cuenta cambió. Vuelve a iniciar sesión con la cuenta original antes de guardar.'
+              : 'The account changed. Sign back in with the original account before saving.'
+            : es
+              ? 'No se pudo completar la solicitud. Inténtalo de nuevo.'
+              : 'The request could not be completed. Try again.',
     );
   }
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setListFailed(false);
     void api
       .list(page, controller.signal)
       .then((items) => {
         if (!controller.signal.aborted) setPlans(items);
       })
       .catch((cause) => {
-        if (!controller.signal.aborted) report(cause);
+        if (!controller.signal.aborted) {
+          setListFailed(true);
+          report(cause);
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -102,7 +140,11 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
     setSlugConflict(false);
     setMessage('');
     try {
+      const account = await createApiClient().currentAccount();
+      if (!account) throw new ApiError('UNAUTHENTICATED', 401);
+      if (account.id !== ownerId) throw new ApiError('ACCOUNT_CHANGED', 409);
       await action();
+      setExpired(false);
     } catch (cause) {
       report(cause);
     } finally {
@@ -111,19 +153,30 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
   }
   return (
     <div className="study-plans">
-      <p role="status">{message}</p>
+      <p role="status">{busy ? (es ? 'Procesando…' : 'Working…') : message}</p>
       <section className="clay-card" aria-label={es ? 'Tus planes' : 'Your plans'}>
         <h2>{es ? 'Tus planes' : 'Your plans'}</h2>
         <div className="plan-actions">
           <button disabled={busy || loading} onClick={() => setRefresh((value) => value + 1)}>
             {es ? 'Actualizar lista' : 'Refresh list'}
           </button>
-          <button disabled={busy} onClick={() => fill(null)}>
+          <button
+            disabled={busy}
+            onClick={() => {
+              if (confirmDiscard()) fill(null);
+            }}
+          >
             {es ? 'Nuevo plan' : 'New plan'}
           </button>
         </div>
         {loading ? (
           <p>{es ? 'Cargando…' : 'Loading…'}</p>
+        ) : listFailed ? (
+          <p role="alert">
+            {es
+              ? 'No se pudo cargar la lista. Usa Actualizar lista para reintentar.'
+              : 'The list could not be loaded. Use Refresh list to retry.'}
+          </p>
         ) : plans.length === 0 ? (
           <p>{es ? 'No hay planes en esta página.' : 'No plans on this page yet.'}</p>
         ) : (
@@ -132,7 +185,9 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
               <li key={plan.id}>
                 <button
                   disabled={busy}
-                  onClick={() => void run(async () => fill(await api.get(plan.id)))}
+                  onClick={() => {
+                    if (confirmDiscard()) void run(async () => fill(await api.get(plan.id)));
+                  }}
                 >
                   {plan.title}
                 </button>
@@ -168,12 +223,15 @@ function PlanWorkspace({ locale }: { locale: Locale }) {
         <h2>
           {selected ? (es ? 'Editar plan' : 'Edit plan') : es ? 'Crear un plan' : 'Create a plan'}
         </h2>
+        {dirty && <p className="unsaved-hint">{es ? 'Cambios sin guardar' : 'Unsaved changes'}</p>}
+        {expired && <SessionRecovery locale={locale} />}
         {error && (
           <p id="plan-error" className="plan-error" role="alert" tabIndex={-1} ref={errorRef}>
             {error}
           </p>
         )}
         <form
+          aria-busy={busy}
           onSubmit={(event) => {
             event.preventDefault();
             void run(async () => {
