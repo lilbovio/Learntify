@@ -18,7 +18,11 @@ The preview example bundles the separate client/server code behind one origin, w
 
 Use [the 20-check alpha scope](ALPHA_SCOPE.md) to interpret progress. Checks 1–19 are the automated implementation target; check 20 remains live learner/environment acceptance. A 19/20 result means 95% checklist coverage, not 95% of the eventual platform or production readiness. Require a successful CI run for the exact release commit before counting check 17.
 
+Validation for implementation commit `053dded`: `pnpm check` passed (77 tests, five architecture checks, formatting, types and three build dry runs); public journeys passed 25/25, compiled runner journeys 5/5, account journeys 10/10 and preview journeys 2/2. The first concurrent account run hit a 45-second notes-journey timeout; the full isolated rerun passed without changing assertions or timeouts. [GitHub CI evidence for this implementation commit](https://github.com/lilbovio/Learntify/actions/runs/40558668730) supplies the separate remote result. The Spanish mobile study-plan screenshot was also inspected for layout and readable download controls.
+
 ## Delivery stage
+
+Implementation commit `053dded` passed GitHub CI on October 27, 2026. Checks 1–19 are accepted: **19/20 (95%) of the first-release alpha checklist**. Check 20 remains open; live HTTPS/provider/restore validation and an invited learner pilot are required before release. Subsequent code changes must pass their own checks before inheriting this status.
 
 Current stage: functional alpha for restricted testing, not a production release candidate. The complete account → lesson → execute → save attempt → review flow is implemented. Eleven bilingual lessons plus a guided basket-calculator project cover values, variables, strings, comparisons, conditionals, loops, functions, arrays and objects, followed by applied basket-total and study-summary exercises. This remains a small beginning of the intended curriculum.
 
