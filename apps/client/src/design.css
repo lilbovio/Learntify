@@ -529,3 +529,17 @@ input[aria-invalid='true'] {
     animation: none !important;
   }
 }
+.download-work {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.download-work button {
+  background: var(--surface);
+  color: var(--accent);
+}
+.download-work small {
+  color: var(--muted);
+}

@@ -31,6 +31,7 @@ export function useUnsavedChanges(dirty: boolean, locale: Locale) {
       if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
       const destination = new URL(anchor.href, window.location.href);
       if (
+        destination.origin === location.origin &&
         destination.pathname === location.pathname &&
         destination.search === location.search &&
         destination.hash

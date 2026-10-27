@@ -102,6 +102,10 @@
           '$ref': '#/components/responses/InternalError'
         '403':
           '$ref': '#/components/responses/Forbidden'
+        '429':
+          'description': 'Daily write capacity reached, or POST exceeds 50 plans. Existing input is preserved; daily limits include Retry-After.'
+        '503':
+          'description': 'Private writes are temporarily paused.'
         '413':
           '$ref': '#/components/responses/TooLarge'
   '/api/v1/study-plans/{id}':
@@ -163,6 +167,10 @@
           '$ref': '#/components/responses/InternalError'
         '403':
           '$ref': '#/components/responses/Forbidden'
+        '429':
+          'description': 'Daily write capacity reached, or POST exceeds 50 plans. Existing input is preserved; daily limits include Retry-After.'
+        '503':
+          'description': 'Private writes are temporarily paused.'
         '413':
           '$ref': '#/components/responses/TooLarge'
     'delete':
@@ -186,6 +194,10 @@
           '$ref': '#/components/responses/InternalError'
         '403':
           '$ref': '#/components/responses/Forbidden'
+        '429':
+          'description': 'Daily write capacity reached. Retry-After indicates the UTC reset.'
+        '503':
+          'description': 'Private writes are temporarily paused.'
 'components':
   'securitySchemes':
     'sessionCookie':

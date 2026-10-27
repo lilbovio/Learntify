@@ -21,6 +21,7 @@ import { createAccountRoutes } from './auth/routes';
 import { createDraftRoutes } from './learning/draft-routes';
 import { createPreferencesRoutes } from './learning/preferences-routes';
 import type { AccountAdmission } from './auth/preview-admission';
+import type { WritePolicy } from './operations/write-budget';
 
 type Variables = { requestId: string };
 export function createApp(
@@ -31,6 +32,7 @@ export function createApp(
     practice?: PracticeRepository;
     studyPlans?: StudyPlanRepository;
     admission?: AccountAdmission;
+    writes?: WritePolicy;
   } = {},
 ) {
   const app = new Hono<{ Variables: Variables }>();
@@ -63,6 +65,62 @@ export function createApp(
             },
             401,
           );
+      }
+      await next();
+    });
+  }
+
+  if (dependencies.auth && dependencies.writes) {
+    const { auth, writes } = dependencies;
+    app.use('/api/v1/*', async (c, next) => {
+      const privateMutation =
+        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(c.req.method) &&
+        /^\/api\/v1\/(drafts|preferences|practice|study-plans)(\/|$)/.test(c.req.path);
+      if (!privateMutation) return next();
+      const session = await auth.api.getSession({ headers: c.req.raw.headers });
+      if (!session)
+        return c.json(
+          {
+            error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
+            meta: { requestId: c.get('requestId') },
+          },
+          401,
+        );
+      if (c.req.header('Origin') !== auth.options.baseURL)
+        return c.json(
+          {
+            error: { code: 'INVALID_ORIGIN', message: 'Use the application origin.' },
+            meta: { requestId: c.get('requestId') },
+          },
+          403,
+        );
+      if (writes.paused) {
+        c.header('Retry-After', '300');
+        return c.json(
+          {
+            error: {
+              code: 'WRITES_PAUSED',
+              message: 'Saving is temporarily paused. Keep your work and try later.',
+            },
+            meta: { requestId: c.get('requestId') },
+          },
+          503,
+        );
+      }
+      if (!(await writes.reserve(session.user.id))) {
+        const now = new Date();
+        const reset = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+        c.header('Retry-After', String(Math.ceil((reset - now.getTime()) / 1000)));
+        return c.json(
+          {
+            error: {
+              code: 'WRITE_LIMIT',
+              message: 'Daily save capacity reached. Keep your work and try tomorrow.',
+            },
+            meta: { requestId: c.get('requestId') },
+          },
+          429,
+        );
       }
       await next();
     });

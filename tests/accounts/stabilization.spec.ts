@@ -18,6 +18,18 @@ test('learning journey protects plan edits and recovers from failed and expired 
   await page.getByRole('button', { name: 'Save practice attempt' }).click();
   await expect(page.getByText('Attempt saved to your account.', { exact: true })).toBeVisible();
   await expect(page.getByText('Code saved to your account.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('textbox', { name: 'Your lesson notes', exact: true })
+    .fill('I can explain why the expression returns seven.');
+  await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
+  const notesDownload = page.waitForEvent('download');
+  await page.locator('.lesson-notes').getByRole('button', { name: 'Download a copy' }).click();
+  const notes = await notesDownload;
+  const noteChunks = [];
+  for await (const chunk of await notes.createReadStream()) noteChunks.push(chunk);
+  expect(Buffer.concat(noteChunks).toString()).toBe(
+    'I can explain why the expression returns seven.',
+  );
   await page.getByRole('link', { name: 'View progress and review' }).click();
   await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 1');
   await page.getByRole('link', { name: 'Study plans', exact: true }).click();
@@ -41,6 +53,29 @@ test('learning journey protects plan edits and recovers from failed and expired 
   const recovery = page.getByRole('link', { name: 'Sign in in another tab' });
   await expect(recovery).toHaveAttribute('target', '_blank');
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep my work');
+  await page.route(
+    '**/api/v1/study-plans',
+    (route) =>
+      route.fulfill({
+        status: 429,
+        json: {
+          error: { code: 'WRITE_LIMIT', message: 'Daily save capacity reached.' },
+          meta: { requestId: 'test-capacity' },
+        },
+      }),
+    { times: 1 },
+  );
+  await page.getByRole('button', { name: 'Create plan', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Saving is temporarily limited.');
+  const planDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download a copy', exact: true }).click();
+  const downloadedPlan = await planDownload;
+  const planChunks = [];
+  for await (const chunk of await downloadedPlan.createReadStream()) planChunks.push(chunk);
+  expect(JSON.parse(Buffer.concat(planChunks).toString())).toMatchObject({
+    title: 'Keep my work',
+    slug: 'keep-my-work',
+  });
   await page.getByRole('button', { name: 'Create plan', exact: true }).click();
   await expect(page.getByText('Plan saved.', { exact: true })).toBeVisible();
   await expect(recovery).toHaveCount(0);

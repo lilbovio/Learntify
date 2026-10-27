@@ -11,6 +11,7 @@ import { createResendDelivery } from '@learntify/email';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 import { previewAdmission } from './auth/preview-admission';
+import { createWritePolicy, cleanupOperationalMetadata } from './operations/write-budget';
 
 const publicApp = createApp();
 const unavailable = () =>
@@ -44,6 +45,7 @@ export async function serveAccounts(
   }
   return createApp({
     auth,
+    writes: createWritePolicy(configuration.database, configuration.writesPaused),
     studyPlans: new D1StudyPlanRepository(configuration.database as unknown as StudyPlanDatabase),
     practice: new D1PracticeRepository(configuration.database as unknown as PracticeDatabase),
     admission,
@@ -56,6 +58,10 @@ export async function serveAccounts(
 
 /** Same-origin /api route; signup and production deletion remain closed pending launch safeguards. */
 export default {
+  async scheduled(_event: unknown, env: ProductionBindings) {
+    const configuration = readAccountConfiguration(env);
+    if (configuration.kind === 'ready') await cleanupOperationalMetadata(configuration.database);
+  },
   async fetch(request: Request, env: ProductionBindings) {
     const configuration = readAccountConfiguration(env);
     if (configuration.kind === 'disabled') return publicApp.fetch(request);

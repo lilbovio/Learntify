@@ -16,7 +16,8 @@ This is the release rehearsal for the current alpha, not a declaration of produc
 1. `pnpm check`: formatting, module boundaries, TypeScript, domain/API/persistence tests and build dry runs.
 2. `pnpm test:e2e`: public English/Spanish learning and mobile navigation.
 3. `pnpm exec playwright test --config playwright.production.config.ts`: compiled client and isolated JavaScript execution.
-4. `pnpm test:accounts`: real local Worker/D1 authentication and account journeys, including CRUD and `stabilization.spec.ts`.
+4. `pnpm test:preview`: same-origin Cloudflare asset/API bundle and offline downloads.
+5. `pnpm test:accounts`: real local Worker/D1 authentication and account journeys, including CRUD and `stabilization.spec.ts`.
 
 The existing GitHub CI runs these commands. A local pass does not prove the remote workflow or deployed infrastructure passed. Check the workflow for the exact commit before promoting it.
 
@@ -36,7 +37,7 @@ Use localhost:5175 with the existing external-test services, or localhost:5174 w
 Prepare these items before authorizing a deployment:
 
 - Select one HTTPS preview origin and a same-origin client/API routing arrangement. Verify SPA fallbacks for `/en/*` and `/es/*`; route `/api/*` to the production Worker entry point. Do not deploy the local or external-local entry points.
-- Create an isolated preview D1 database and apply all numbered migrations through `0007_study_plans.sql`. Never apply the local mailbox migration remotely. Keep external-test data separate.
+- Create an isolated preview D1 database and apply all numbered migrations through `0008_operational_limits.sql`. Never apply the local mailbox migration remotely. Keep external-test data separate.
 - Use `ACCOUNT_MODE=existing-accounts`, exact `APP_ORIGIN`, a verified `EMAIL_FROM`, and secrets for `AUTH_SECRET`, `RESEND_API_KEY`, and `PREVIEW_EMAILS`. The exact-email allowlist is limited to 20 addresses by the current implementation. Public lessons remain public.
 - Provision only invited accounts using the existing reviewable provisioning script. Verify admitted and non-admitted accounts, including removal from the allowlist. Public signup and production account deletion stay disabled.
 - Configure provider credentials and callback URLs for the chosen HTTPS origin; local OAuth registrations do not establish preview readiness. Check passkeys on that origin because registrations are origin-dependent.
@@ -49,3 +50,5 @@ Prepare these items before authorizing a deployment:
 ## Remaining limitations
 
 This pass does not complete curriculum expansion, community moderation/chat, full interview preparation, offline form backup, multi-device merge handling for study plans, or production operations. Forms remain in tab memory until saved; explicit discard or a browser crash can lose edits. Study plan updates remain last-write-wins. Admission, quota, recovery and deployed-origin checks are required before treating the preview as ready for invited learners.
+
+See [the alpha scope checklist](ALPHA_SCOPE.md) for acceptance counting and [operations](OPERATIONS.md) for capacity limits, cleanup, and recovery rehearsal.

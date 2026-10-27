@@ -1,4 +1,8 @@
-import { studyPlanListResponseSchema, studyPlanResponseSchema } from '@learntify/api-contracts';
+import {
+  apiErrorSchema,
+  studyPlanListResponseSchema,
+  studyPlanResponseSchema,
+} from '@learntify/api-contracts';
 import { ApiError } from './index';
 export type PlanActivity = {
   method: string;
@@ -24,11 +28,13 @@ export function createStudyPlanClient(
     const body: unknown = response.status === 204 ? null : await response.json();
     if (!signal?.aborted)
       onActivity({ method, path, status: response.status, request: input ?? null, response: body });
-    if (!response.ok)
+    if (!response.ok) {
+      const error = apiErrorSchema.safeParse(body);
       throw new ApiError(
-        response.status === 409 ? 'SLUG_CONFLICT' : 'PLAN_REQUEST_FAILED',
+        error.success ? error.data.error.code : 'PLAN_REQUEST_FAILED',
         response.status,
       );
+    }
     return body;
   }
   return {

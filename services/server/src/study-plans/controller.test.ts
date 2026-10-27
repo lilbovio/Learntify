@@ -2,7 +2,7 @@ import { beforeAll, afterAll, expect, it } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { readFile } from 'node:fs/promises';
 import { D1StudyPlanRepository, type StudyPlanDatabase } from '@learntify/study-plan-storage';
-import type { StudyPlanRepository } from '@learntify/study-plans';
+import { StudyPlanLimitError, type StudyPlanRepository } from '@learntify/study-plans';
 import type { LearntifyAuth } from '../auth/create-auth';
 import { createApp } from '../index';
 
@@ -35,6 +35,7 @@ const auth = {
 let runtime: Miniflare;
 let app: ReturnType<typeof createApp>;
 let repository: D1StudyPlanRepository;
+let database: StudyPlanDatabase;
 beforeAll(async () => {
   runtime = new Miniflare({
     modules: true,
@@ -54,11 +55,47 @@ beforeAll(async () => {
     .split(';')
     .filter((value) => value.trim()))
     await db.prepare(statement).run();
-  repository = new D1StudyPlanRepository(db as unknown as StudyPlanDatabase);
+  database = db as unknown as StudyPlanDatabase;
+  repository = new D1StudyPlanRepository(database);
   app = createApp({ auth, studyPlans: repository });
 });
 afterAll(async () => {
   await runtime?.dispose();
+});
+it('limits plan storage atomically and allows space to be reclaimed', async () => {
+  const limited = new D1StudyPlanRepository(database, 2);
+  const now = new Date().toISOString();
+  const results = await Promise.allSettled(
+    Array.from({ length: 5 }, (_, index) =>
+      limited.create({
+        ...input,
+        slug: 'limited-' + index,
+        ownerId: 'alice',
+        id: crypto.randomUUID(),
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ),
+  );
+  // Other tests may already own one plan; count the actual account rows.
+  const plans = await limited.list('alice', { page: 1, limit: 100 });
+  expect(plans).toHaveLength(2);
+  const limitedApp = createApp({ auth, studyPlans: limited });
+  expect(
+    (await request('POST', '', { ...input, slug: 'over-capacity' }, 'alice', limitedApp)).status,
+  ).toBe(429);
+  expect(
+    (await request('POST', '', { ...input, slug: plans[0]!.slug }, 'alice', limitedApp)).status,
+  ).toBe(409);
+  expect(
+    results.some(
+      (result) => result.status === 'rejected' && result.reason instanceof StudyPlanLimitError,
+    ),
+  ).toBe(true);
+  for (const plan of plans.filter((plan) => plan.slug.startsWith('limited-')))
+    await limited.delete('alice', plan.id);
+  expect((await limited.list('alice', { page: 1, limit: 100 })).length).toBeLessThan(2);
 });
 function request(method: string, suffix = '', body?: unknown, cookie = 'alice', target = app) {
   return target.request(base + suffix, {

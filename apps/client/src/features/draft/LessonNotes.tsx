@@ -1,4 +1,5 @@
 import { SessionRecovery } from '../../shared/SessionRecovery';
+import { DownloadWork } from '../../shared/DownloadWork';
 import { useEffect, useRef, useState } from 'react';
 import { createApiClient } from '@learntify/api-client';
 import type { Locale } from '@learntify/api-contracts';
@@ -62,6 +63,19 @@ export function LessonNotes({
         {text[state.status]}
       </p>
       {state.sessionExpired && <SessionRecovery locale={locale} />}
+      {state.saveLimited && (
+        <p>
+          {locale === 'es'
+            ? 'El guardado está limitado temporalmente. Descarga una copia y reintenta más tarde.'
+            : 'Saving is temporarily limited. Download a copy and retry later.'}
+        </p>
+      )}
+      <DownloadWork
+        content={state.content}
+        filename={`${lessonId}-notes.txt`}
+        locale={locale}
+        disabled={!state.opened}
+      />
       {state.status === 'error' && (
         <button
           onClick={() => {

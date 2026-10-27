@@ -10,6 +10,7 @@ import { PageFrame } from '../../shared/PageFrame';
 import { AccountPanel } from '../account/AccountPanel';
 import { useUnsavedChanges } from '../../shared/useUnsavedChanges';
 import { SessionRecovery } from '../../shared/SessionRecovery';
+import { DownloadWork } from '../../shared/DownloadWork';
 
 export function StudyPlansPage({ locale }: { locale: Locale }) {
   const [account, setAccount] = useState<string | null>(null);
@@ -86,6 +87,22 @@ function PlanWorkspace({
   function report(cause: unknown) {
     setExpired(cause instanceof ApiError && cause.status === 401);
     setSlugConflict(cause instanceof ApiError && cause.code === 'SLUG_CONFLICT');
+    if (cause instanceof ApiError && cause.code === 'PLAN_LIMIT') {
+      setError(
+        es
+          ? 'Tienes 50 planes. Elimina uno que ya no uses antes de crear otro; tus cambios siguen aquí.'
+          : 'You have 50 plans. Delete an unused plan before creating another; your changes are still here.',
+      );
+      return;
+    }
+    if (cause instanceof ApiError && (cause.status === 429 || cause.code === 'WRITES_PAUSED')) {
+      setError(
+        es
+          ? 'El guardado está temporalmente limitado. Descarga una copia y vuelve a intentarlo más tarde.'
+          : 'Saving is temporarily limited. Download a copy and try again later.',
+      );
+      return;
+    }
     setError(
       cause instanceof ApiError && cause.code === 'SLUG_CONFLICT'
         ? es
@@ -326,6 +343,15 @@ function PlanWorkspace({
             </button>
           </fieldset>
         </form>
+        <DownloadWork
+          content={JSON.stringify(
+            { title, slug, description, weeklyMinutes: minutes, status },
+            null,
+            2,
+          )}
+          filename="study-plan.json"
+          locale={locale}
+        />
         {selected && (
           <button
             disabled={busy}

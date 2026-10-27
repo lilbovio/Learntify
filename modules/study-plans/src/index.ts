@@ -1,4 +1,9 @@
 export type PlanStatus = 'draft' | 'active' | 'completed';
+export class StudyPlanLimitError extends Error {
+  constructor() {
+    super('Study plan capacity reached.');
+  }
+}
 export interface PlanInput {
   title: string;
   description: string;

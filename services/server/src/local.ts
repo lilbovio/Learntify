@@ -2,6 +2,7 @@ import { D1StudyPlanRepository, type StudyPlanDatabase } from '@learntify/study-
 import type { D1Database } from '@cloudflare/workers-types';
 import { createAuth } from './auth/create-auth';
 import { createApp } from './index';
+import { createWritePolicy } from './operations/write-budget';
 import { D1PracticeRepository, type PracticeDatabase } from '@learntify/practice-storage';
 import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage';
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
@@ -40,6 +41,7 @@ export default {
     await auth.$context;
     return createApp({
       auth,
+      writes: createWritePolicy(env.DB),
       studyPlans: new D1StudyPlanRepository(env.DB as unknown as StudyPlanDatabase),
       practice: new D1PracticeRepository(env.DB as unknown as PracticeDatabase),
       preferences: new D1PreferencesRepository(env.DB as unknown as PreferencesDatabase),

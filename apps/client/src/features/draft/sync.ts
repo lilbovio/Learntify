@@ -14,6 +14,7 @@ export interface DraftPort {
 export type DraftState = {
   opened?: true;
   sessionExpired?: boolean;
+  saveLimited?: boolean;
   content: string;
   status: 'loading' | 'saved' | 'pending' | 'saving' | 'error' | 'conflict';
   dirty: boolean;
@@ -39,7 +40,9 @@ export class DraftSync {
     if (this.disposed) return;
     this.state = {
       ...this.state,
-      ...(update.status && update.status !== 'error' ? { sessionExpired: false } : {}),
+      ...(update.status && update.status !== 'error'
+        ? { sessionExpired: false, saveLimited: false }
+        : {}),
       ...update,
     };
     this.changed(this.state);
@@ -57,6 +60,8 @@ export class DraftSync {
       this.emit({
         status: 'error',
         sessionExpired: error instanceof ApiError && error.status === 401,
+        saveLimited:
+          error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
       });
     } finally {
       this.busy = false;
@@ -124,6 +129,8 @@ export class DraftSync {
             status: 'error',
             dirty: true,
             sessionExpired: cause instanceof ApiError && cause.status === 401,
+            saveLimited:
+              cause instanceof ApiError && (cause.status === 429 || cause.code === 'WRITES_PAUSED'),
           });
         }
       } else
@@ -131,6 +138,8 @@ export class DraftSync {
           status: 'error',
           dirty: true,
           sessionExpired: error instanceof ApiError && error.status === 401,
+          saveLimited:
+            error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
         });
     } finally {
       this.busy = false;
@@ -174,6 +183,8 @@ export class DraftSync {
       this.emit({
         status: 'error',
         sessionExpired: error instanceof ApiError && error.status === 401,
+        saveLimited:
+          error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
       });
     } finally {
       this.busy = false;

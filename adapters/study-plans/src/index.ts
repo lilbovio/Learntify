@@ -5,6 +5,7 @@ import type {
   PlanStatus,
   StudyPlanRepository,
 } from '@learntify/study-plans';
+import { StudyPlanLimitError } from '@learntify/study-plans';
 export interface StudyPlanDatabase {
   prepare(sql: string): {
     bind(...values: (string | number | null)[]): {
@@ -24,7 +25,12 @@ function decode(row: Row): PlanRecord {
   };
 }
 export class D1StudyPlanRepository implements StudyPlanRepository {
-  constructor(private readonly db: StudyPlanDatabase) {}
+  constructor(
+    private readonly db: StudyPlanDatabase,
+    private readonly maxPlans = 50,
+  ) {
+    if (!Number.isInteger(maxPlans) || maxPlans < 1) throw new Error('Invalid plan capacity');
+  }
   async list(ownerId: string, query: PlanQuery) {
     const result = await this.db
       .prepare(
@@ -49,7 +55,7 @@ export class D1StudyPlanRepository implements StudyPlanRepository {
   async create(plan: PlanRecord) {
     const row = await this.db
       .prepare(
-        `INSERT INTO study_plans (id, owner_id, slug, title, description, weekly_minutes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(owner_id, slug) DO NOTHING RETURNING ${columns}`,
+        `INSERT INTO study_plans (id, owner_id, slug, title, description, weekly_minutes, status, created_at, updated_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM study_plans WHERE owner_id = ?) < ? ON CONFLICT(owner_id, slug) DO NOTHING RETURNING ${columns}`,
       )
       .bind(
         plan.id,
@@ -61,9 +67,17 @@ export class D1StudyPlanRepository implements StudyPlanRepository {
         plan.status,
         Date.parse(plan.createdAt),
         Date.parse(plan.updatedAt),
+        plan.ownerId,
+        this.maxPlans,
       )
       .first<Row>();
-    return row ? decode(row) : null;
+    if (row) return decode(row);
+    const duplicate = await this.db
+      .prepare('SELECT id FROM study_plans WHERE owner_id = ? AND slug = ?')
+      .bind(plan.ownerId, plan.slug)
+      .first();
+    if (duplicate) return null;
+    throw new StudyPlanLimitError();
   }
   async replace(
     ownerId: string,

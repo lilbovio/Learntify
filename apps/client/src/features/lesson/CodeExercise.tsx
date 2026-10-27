@@ -3,6 +3,7 @@ import type { Lesson, Locale } from '@learntify/api-contracts';
 import { SaveAttempt } from './SaveAttempt';
 import { useCodeDraft } from '../draft/useCodeDraft';
 import { CodeDraftStatus } from '../draft/CodeDraftStatus';
+import { DownloadWork } from '../../shared/DownloadWork';
 import { AttemptHistory } from './AttemptHistory';
 
 const copy = {
@@ -158,6 +159,12 @@ export function CodeExercise({
           {text.reset}
         </button>
       </div>
+      <DownloadWork
+        content={code}
+        filename={`${lesson.id}.js`}
+        locale={locale}
+        disabled={!draft.ready}
+      />
       {accountId ? (
         <CodeDraftStatus
           state={draft.state}

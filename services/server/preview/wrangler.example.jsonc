@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "learntify-preview",
+  "main": "../src/production.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "send_metrics": false,
+  "observability": { "enabled": false },
+  "vars": { "ACCOUNT_MODE": "disabled", "PRIVATE_WRITES": "paused" },
+  "assets": {
+    "directory": "../../../apps/client/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "triggers": { "crons": ["*/15 * * * *"] },
+}

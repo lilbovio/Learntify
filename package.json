@@ -24,7 +24,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build": "pnpm --filter @learntify/client build && pnpm --filter @learntify/server build",
-    "check": "pnpm format:check && pnpm check:boundaries && pnpm typecheck && pnpm test:boundaries && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm check:boundaries && pnpm typecheck && pnpm test:boundaries && pnpm test && pnpm build",
+    "test:preview": "playwright test --config playwright.preview.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

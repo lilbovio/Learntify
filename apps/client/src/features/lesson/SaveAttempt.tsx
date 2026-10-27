@@ -38,7 +38,7 @@ export function SaveAttempt({ input, locale }: { input: PracticeAttemptInput; lo
     } catch (error) {
       setExpired(error instanceof ApiError && error.status === 401);
       setState(
-        error instanceof ApiError && error.code === 'PRACTICE_LIMIT'
+        error instanceof ApiError && error.status === 429
           ? 'limit'
           : error instanceof ApiError && ['ACCOUNT_CHANGED', 'STALE_LESSON'].includes(error.code)
             ? 'changed'

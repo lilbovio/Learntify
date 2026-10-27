@@ -6,7 +6,7 @@ import {
   studyPlanIdSchema,
   studyPlanQuerySchema,
 } from '@learntify/api-contracts';
-import { StudyPlanService } from '@learntify/study-plans';
+import { StudyPlanService, StudyPlanLimitError } from '@learntify/study-plans';
 import type { LearntifyAuth } from '../auth/create-auth';
 import { errorBody, meta } from '../http/envelope';
 
@@ -47,7 +47,21 @@ export class StudyPlanController {
     routes.post('/', async (c) => {
       const input = createStudyPlanSchema.safeParse(await c.req.json().catch(() => null));
       if (!input.success) return c.json(errorBody(c, 'INVALID_INPUT', 'Invalid study plan.'), 400);
-      const plan = await this.service.create(c.get('ownerId'), input.data);
+      let plan;
+      try {
+        plan = await this.service.create(c.get('ownerId'), input.data);
+      } catch (error) {
+        if (error instanceof StudyPlanLimitError)
+          return c.json(
+            errorBody(
+              c,
+              'PLAN_LIMIT',
+              'You have reached 50 study plans. Remove an unused plan before creating another.',
+            ),
+            429,
+          );
+        throw error;
+      }
       if (!plan)
         return c.json(errorBody(c, 'SLUG_CONFLICT', 'A plan with this slug already exists.'), 409);
       c.header('Location', '/api/v1/study-plans/' + plan.id);

@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated October 26, 2026.
+Updated October 27, 2026.
 
 ## Study Plans coursework module
 
@@ -9,6 +9,14 @@ Study Plans now has authenticated GET list, GET by ID, POST, PUT and DELETE rout
 ## Alpha stabilization
 
 Unsaved study-plan and preference edits now have navigation/discard protection. Session recovery keeps current tab input available, with account checks before retrying plan/preference saves. Draft sync and saved attempts expose sign-in recovery, and failed list requests are distinguished from empty results. Shared form spacing, focus indicators, invalid states, mobile layouts and reduced-motion behavior received an incremental pass. The learning-to-plan rehearsal covers failed/expired saves and cancelled navigation. See [alpha acceptance and preview handoff](ALPHA_ACCEPTANCE.md) for remaining environment gates.
+
+## Capacity, recovery and preview artifact
+
+Private writes now have atomic daily reservations (2,000/account, 10,000/global) and a PRIVATE_WRITES pause switch. Study plan storage is bounded at 50 per account. Migration 0008 is applied to the dedicated external-test D1 database. Code, notes and plans have explicit downloadable copies; capacity failures retain current input. Retry-journal/counter cleanup is implemented through a bounded scheduled handler. Synthetic snapshot restore, deletion replay, session invalidation and database integrity are tested locally. This does not claim provider backup retention or a deployed recovery exercise.
+
+The preview example bundles the separate client/server code behind one origin, with API routes handled by the Worker and localized deep links handled by the static SPA. Its local browser suite verifies routing, compiled execution and offline downloads. CI now includes that suite and a third deployment dry run. No preview or production deployment has been performed.
+
+Use [the 20-check alpha scope](ALPHA_SCOPE.md) to interpret progress. Checks 1–19 are the automated implementation target; check 20 remains live learner/environment acceptance. A 19/20 result means 95% checklist coverage, not 95% of the eventual platform or production readiness. Require a successful CI run for the exact release commit before counting check 17.
 
 ## Delivery stage
 
