@@ -1,6 +1,14 @@
 # Implementation status
 
-Updated October 27, 2026.
+Updated October 31, 2026.
+
+## Final alpha gate preparation
+
+The owner requested preparation only on October 31; deployment still requires approval and no pilot testers are available. The final gate remains open. See [the concrete alpha release handoff](ALPHA_RELEASE.md) for the proposed origin, isolated resources, operator checks and bilingual learner rehearsal.
+
+The server now reports routed 5xx failures using request IDs and fixed feature categories without raw request or exception contents. `pnpm check:preview <origin> <public|accounts>` provides credential-free, time-bounded smoke checks. A browser regression invokes the actual Node command against the built Worker. The proposed alpha configuration has a separate CI dry run, a placeholder database ID, no credentials and paused private writes. No deployment or external resource change was performed.
+
+October 31 local validation passed: `pnpm check` with 82 tests and five architecture tests, all three preview browser tests (including the actual command invocation), and the separate alpha-template dry run. Check the branch's CI result for this batch before promoting it; earlier green runs do not validate later commits.
 
 ## Study Plans coursework module
 

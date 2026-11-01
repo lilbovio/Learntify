@@ -1,4 +1,20 @@
 import { expect, test } from '@playwright/test';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+test('standalone preview check validates the running Worker', async () => {
+  const { stdout } = await promisify(execFile)(process.execPath, [
+    'services/server/scripts/check-preview.ts',
+    'http://127.0.0.1:8790',
+    'public',
+  ]);
+  expect(stdout.trim().split(/\r?\n/)).toEqual([
+    'PASS API health',
+    'PASS Account mode',
+    'PASS en lesson catalog',
+    'PASS es lesson catalog',
+  ]);
+});
 test('same-origin preview serves localized deep links and keeps API errors as JSON', async ({
   page,
   request,

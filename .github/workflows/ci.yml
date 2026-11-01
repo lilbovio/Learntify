@@ -20,6 +20,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm --filter @learntify/server exec wrangler deploy --dry-run --config preview/wrangler.alpha.example.jsonc --outdir dist/alpha
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - run: pnpm exec playwright test --config playwright.production.config.ts

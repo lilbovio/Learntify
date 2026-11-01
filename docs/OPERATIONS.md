@@ -28,6 +28,12 @@ The preview example schedules this every 15 minutes. It is inactive until an acc
 
 Run `pnpm test:preview` to test it locally. `pnpm build` includes its dry run. A real deployment requires a separately reviewed `services/server/preview/wrangler.jsonc` (ignored by Git), an HTTPS origin, isolated D1 binding and provider secrets. Do not deploy the external-local entry point. Do not enable CD merely because the artifact builds.
 
+## Read-only checks and diagnostic records
+
+Run `pnpm check:preview http://localhost:8790 public` against a running local preview, or use the chosen HTTPS origin and `accounts` for an account-enabled environment. The command checks API health, the expected account mode and both lesson catalogs. It sends no credentials, refuses redirects, limits each request to five seconds and prints only check names and pass/fail results. It does not prove database health, OAuth, email delivery or authenticated persistence; complete the learner rehearsal separately.
+
+The production API emits structured records for routed 5xx responses with a generated request ID, fixed feature category and status only. It deliberately excludes raw paths, query strings, bodies, cookies and exception text. Match the request ID with the response header when investigating a report. A failing diagnostic sink cannot replace the API response. This covers requests handled by the app router; configuration/startup failures and platform errors still need platform-level monitoring. Persistent Cloudflare observability remains disabled in the examples. Choose and verify retention before enabling it; no 14-day retention or alert delivery is implied by console records.
+
 ## Recovery rehearsal
 
 `services/server/src/operations/recovery.test.ts` loads every numbered migration into a synthetic SQLite database, creates representative account/session/passkey/draft/attempt/plan data, takes an in-memory snapshot, restores it into a separate database, replays a deletion and checks foreign keys/integrity. It proves schema and cleanup behavior locally. It does **not** prove Cloudflare retention, remote restore mechanics, deletion-ledger completeness or operational recovery time.

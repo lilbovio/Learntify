@@ -12,8 +12,9 @@ import { D1DraftRepository, type DraftDatabase } from '@learntify/draft-storage'
 import { D1PreferencesRepository, type PreferencesDatabase } from '@learntify/preferences-storage';
 import { previewAdmission } from './auth/preview-admission';
 import { createWritePolicy, cleanupOperationalMetadata } from './operations/write-budget';
+import { reportFailure } from './operations/diagnostics';
 
-const publicApp = createApp();
+const publicApp = createApp({ reportFailure });
 const unavailable = () =>
   new Response('Account configuration is unavailable.', {
     status: 503,
@@ -44,6 +45,7 @@ export async function serveAccounts(
     return unavailable();
   }
   return createApp({
+    reportFailure,
     auth,
     writes: createWritePolicy(configuration.database, configuration.writesPaused),
     studyPlans: new D1StudyPlanRepository(configuration.database as unknown as StudyPlanDatabase),

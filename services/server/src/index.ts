@@ -22,6 +22,7 @@ import { createDraftRoutes } from './learning/draft-routes';
 import { createPreferencesRoutes } from './learning/preferences-routes';
 import type { AccountAdmission } from './auth/preview-admission';
 import type { WritePolicy } from './operations/write-budget';
+import { failureArea, type FailureEvent } from './operations/diagnostics';
 
 type Variables = { requestId: string };
 export function createApp(
@@ -33,6 +34,7 @@ export function createApp(
     studyPlans?: StudyPlanRepository;
     admission?: AccountAdmission;
     writes?: WritePolicy;
+    reportFailure?: (event: FailureEvent) => void;
   } = {},
 ) {
   const app = new Hono<{ Variables: Variables }>();
@@ -43,6 +45,18 @@ export function createApp(
     c.header('Cache-Control', 'no-store');
     await next();
     c.header('X-Request-Id', c.get('requestId'));
+    if (c.res.status >= 500 && dependencies.reportFailure) {
+      try {
+        dependencies.reportFailure({
+          event: 'request_failed',
+          requestId: c.get('requestId'),
+          area: failureArea(c.req.path),
+          status: c.res.status,
+        });
+      } catch {
+        // Diagnostics must never replace the API response or trigger recursive logging.
+      }
+    }
   });
 
   if (dependencies.auth && dependencies.admission) {
