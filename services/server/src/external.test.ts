@@ -1,6 +1,7 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import external from './external';
 import { readAccountConfiguration, type ProductionBindings } from './configuration';
+import * as production from './production';
 
 const env: ProductionBindings & { LOCAL_EXTERNAL_SERVICES: string } = {
   LOCAL_EXTERNAL_SERVICES: 'true',
@@ -26,6 +27,24 @@ it('keeps production HTTPS validation while explicitly supporting one local test
     expect(readAccountConfiguration({ ...env, APP_ORIGIN: origin }, 'local-external').kind).toBe(
       'invalid',
     );
+});
+it('passes the verified Learntify sender to the account service', async () => {
+  const service = vi
+    .spyOn(production, 'serveAccounts')
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  try {
+    const response = await external.fetch(new Request('http://localhost:8789/api/v1/me'), {
+      ...env,
+      EMAIL_FROM: 'signin@mail.learntify.lat',
+    });
+    expect(response.status).toBe(204);
+    expect(service).toHaveBeenCalledWith(
+      expect.any(Request),
+      expect.objectContaining({ from: 'signin@mail.learntify.lat' }),
+    );
+  } finally {
+    service.mockRestore();
+  }
 });
 it('rejects public access, disabled mode, extra recipients and incomplete configuration before provider use', async () => {
   for (const url of [
