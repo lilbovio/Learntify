@@ -1,6 +1,17 @@
 # Alpha release handoff
 
-Updated October 31, 2026. **Deployment is awaiting owner approval. No testers are available yet.** The software checklist is not a substitute for the final live-service and learner acceptance gate.
+Updated November 8, 2026. **The owner-approved alpha is deployed at https://alpha.learntify.lat.** Private writes remain paused for initial live authentication and operator checks. The learner rehearsal remains pending.
+
+## First deployment evidence
+
+- Source commit: `7eedc07a534f8bd4da0ddbf95f6e6ae5dee537af`.
+- Merged CI passed: https://github.com/lilbovio/Learntify/actions/runs/42524193993.
+- Cloudflare version: `cd2b28c7-5b54-4b5f-b416-05cf7210b8af`.
+- Isolated alpha D1 schema is current through migration 0008. The owner account was provisioned unverified for normal email verification.
+- Dedicated secrets were uploaded with deployment. Private files remain ignored.
+- Live checks passed for API health, account capability and both lesson catalogs. English, Spanish and auth pages return HTML with status 200. Unauthenticated account and study-plan endpoints return 401.
+- D1 reports a recovery bookmark. A restore rehearsal has not been performed.
+- Owner must complete live email/OAuth/passkey sign-in and logout. Saved-work rehearsal follows enabling private writes after the remaining operator checks.
 
 ## Prepared destination
 
@@ -21,7 +32,7 @@ These commands do not deploy. Database creation, remote migrations, provisioning
 
 Record the release commit and CI URL, operator, date, evidence and result for each check. Keep addresses, tokens and database contents out of the repository.
 
-- **Pending approval:** owner authorizes the concrete destination and isolated resources.
+- **Approved and deployed:** owner authorized the alpha destination and isolated resources.
 - **Pending environment:** HTTPS routing and real provider quotas are verified in the relevant accounts, including free-tier limits and billing settings.
 - **Pending identity:** email, Google, GitHub, passkey and logout succeed on the preview origin; an uninvited identity cannot enter private APIs.
 - **Pending persistence:** code, notes, attempts and plans survive sign-out/sign-in and reload; one account cannot access another account's records.
