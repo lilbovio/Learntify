@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Future Feature Design Concepts · Learntify UI</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-canvas);
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: var(--line-height-normal);
+      padding: var(--space-8) var(--space-6);
+      max-width: var(--width-main);
+      margin: 0 auto;
+    }
+
+    .header-area {
+      border-bottom: 1px solid var(--color-divider);
+      padding-bottom: var(--space-6);
+      margin-bottom: var(--space-10);
+    }
+
+    .badge-status {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-status-warning);
+      background: rgba(243, 196, 119, 0.1);
+      border: 1px solid var(--color-status-warning);
+      padding: 3px 8px;
+      border-radius: var(--radius-control);
+      margin-bottom: var(--space-3);
+    }
+
+    h1 {
+      font-size: var(--text-3xl);
+      letter-spacing: -0.03em;
+      margin-bottom: var(--space-2);
+    }
+
+    .intro-note {
+      color: var(--color-text-secondary);
+      max-width: 65ch;
+      font-size: var(--text-base);
+    }
+
+    .concept-card {
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      padding: var(--space-8);
+      margin-bottom: var(--space-12);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .concept-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-divider);
+      padding-bottom: var(--space-4);
+    }
+
+    .concept-title h2 {
+      font-size: var(--text-xl);
+      font-weight: 700;
+    }
+
+    .concept-scope {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    .concept-rationale {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Mockups within concept */
+    .concept-mockup {
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: var(--space-5);
+    }
+
+    .forum-question-composer {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .attached-lesson-ref {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      background-color: var(--color-canvas);
+      padding: 6px 10px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--color-divider);
+      font-family: var(--font-mono);
+    }
+
+    .composer-input {
+      background-color: var(--color-canvas);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: var(--space-3);
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--text-sm);
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .interview-prompt-box {
+      border-left: 3px solid var(--color-text-primary);
+      padding-left: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .rubric-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .rubric-item span.icon {
+      color: var(--color-status-success);
+    }
+  </style>
+</head>
+<body>
+  <header class="header-area">
+    <span class="badge-status">Design Concepts · Not In Live Navigation</span>
+    <h1>Future Community & Rehearsal Concepts</h1>
+    <p class="intro-note">
+      These concepts explore future social, peer study, and interview preparation capabilities. They are deliberately kept out of live navigation and routes until backed by verified backend infrastructure, authentication, and moderation coverage.
+    </p>
+  </header>
+
+  <!-- Concept 1: Lesson Question Composer & Moderated Forum -->
+  <section class="concept-card">
+    <div class="concept-title">
+      <h2>1. Contextual Lesson Question (Moderated Forum)</h2>
+      <span class="concept-scope">Route Concept: /forum (deferred)</span>
+    </div>
+    <p class="concept-rationale">
+      How a learner asks a question directly from a lesson without losing code context or being redirected away. Questions are tagged with the specific lesson ID and code snippet, and dispatched to a moderated queue where mentors provide plain-language guidance.
+    </p>
+    <div class="concept-mockup">
+      <div class="forum-question-composer">
+        <div class="attached-lesson-ref">
+          <span>Attached context:</span>
+          <strong>Lesson 01 (values-and-expressions)</strong>
+          <code>code: console.log(2 + 3);</code>
+        </div>
+        <textarea class="composer-input" placeholder="What part of this expression would you like help understanding? Explain what you expected vs what occurred..."></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: var(--color-text-tertiary);">Moderated community · Civil, encouraging discussions only</span>
+          <button style="background: var(--color-action-primary-fill); color: var(--color-action-primary-label); border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 13px;" type="button">
+            Post question to mentors
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Concept 2: Study Circle Chat -->
+  <section class="concept-card">
+    <div class="concept-title">
+      <h2>2. Study Circle Chat</h2>
+      <span class="concept-scope">Route Concept: /circles (deferred)</span>
+    </div>
+    <p class="concept-rationale">
+      Small, opt-in peer study rooms (4-6 learners) moving through the Foundations path simultaneously. No global noisy channels; focused entirely on explaining concepts to each other and mutual accountability.
+    </p>
+    <div class="concept-mockup">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-divider); padding-bottom: 8px;">
+          <div>
+            <strong style="font-size: 14px;">Foundations Circle · Cohort 12</strong>
+            <p style="font-size: 12px; color: var(--color-text-secondary);">4 members active · Focused on Variables & Functions</p>
+          </div>
+          <span style="font-size: 11px; background: rgba(163,230,195,0.1); color: var(--color-status-success); padding: 2px 6px; border-radius: 4px;">Active</span>
+        </div>
+        <div style="font-size: 13.5px; color: var(--color-text-secondary); line-height: 1.5;">
+          <p><strong style="color: var(--color-text-primary);">Elena:</strong> In lesson 2, when we reassign <code>score = 20</code>, why don't we type <code>let</code> again?</p>
+          <p style="margin-top: 6px;"><strong style="color: var(--color-text-primary);">Carlos:</strong> Because <code>let</code> creates the variable storage space once. Reassigning just updates the value inside it!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Concept 3: Interview Rehearsal Walkthrough -->
+  <section class="concept-card">
+    <div class="concept-title">
+      <h2>3. Technical Interview Rehearsal</h2>
+      <span class="concept-scope">Route Concept: /rehearsal (deferred)</span>
+    </div>
+    <p class="concept-rationale">
+      Complete beginners often know the answer but struggle to articulate how JavaScript executes under interview scrutiny. This rehearsal workspace prompts the learner to explain code line-by-line using precise technical vocabulary before revealing the benchmark explanation.
+    </p>
+    <div class="concept-mockup">
+      <div class="interview-prompt-box">
+        <h4 style="font-size: 14px; margin-bottom: 4px;">Interview Scenario: Explain Variable Scope & Reassignment</h4>
+        <p style="font-size: 13px; color: var(--color-text-secondary);">"Can you walk me through what happens in memory when this code runs?"</p>
+      </div>
+      <pre style="background: var(--color-canvas); padding: 10px; border-radius: 6px; border: 1px solid var(--color-divider); font-family: var(--font-mono); font-size: 13px; margin-bottom: 12px;">let counter = 1;
+counter = counter + 1;
+console.log(counter);</pre>
+      <ul class="rubric-list">
+        <li class="rubric-item"><span class="icon">✓</span> Mention declaration and initialization of <code>counter</code></li>
+        <li class="rubric-item"><span class="icon">✓</span> Explain evaluation of right-hand expression <code>counter + 1</code></li>
+        <li class="rubric-item"><span class="icon">✓</span> Describe assignment to existing memory slot</li>
+      </ul>
+    </div>
+  </section>
+</body>
+</html>

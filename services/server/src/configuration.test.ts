@@ -41,6 +41,18 @@ it('validates exact HTTPS origins and complete preview bindings without accessin
     } as unknown as NonNullable<ProductionBindings['DB']>,
   };
   expect(readAccountConfiguration(env).kind).toBe('ready');
+  expect(readAccountConfiguration({ ...env, PRIVATE_WRITES: 'paused' })).toMatchObject({
+    kind: 'ready',
+    writesPaused: true,
+  });
+  expect(readAccountConfiguration({ ...env, PRIVATE_WRITES: 'enabled' })).toMatchObject({
+    kind: 'ready',
+    writesPaused: false,
+  });
+  expect(readAccountConfiguration({ ...env, PRIVATE_WRITES: 'unknown' })).toMatchObject({
+    kind: 'invalid',
+    fields: ['PRIVATE_WRITES'],
+  });
   for (const origin of [
     'http://learntify.test',
     'https://learntify.test/',

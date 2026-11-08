@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learntify UI Prototype & Design Review Hub</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0b0c0e;
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Control Bar */
+    .review-toolbar {
+      height: 60px;
+      background-color: var(--color-canvas);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand-title {
+      font-size: var(--text-base);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .review-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background-color: rgba(163, 230, 195, 0.1);
+      color: var(--color-status-success);
+      border: 1px solid var(--color-status-success);
+    }
+
+    /* Compositions Switcher */
+    .composition-tabs {
+      display: flex;
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color var(--duration-interactive), color var(--duration-interactive);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tab-btn.active {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Viewport Frame Resizer Controls */
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .viewport-group {
+      display: flex;
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: 2px;
+    }
+
+    .vp-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+    }
+
+    .vp-btn.active {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    .toggle-motion-btn {
+      background: transparent;
+      border: 1px solid var(--color-divider);
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toggle-motion-btn:hover {
+      color: var(--color-text-primary);
+      border-color: var(--color-outline-interactive);
+    }
+    .toggle-motion-btn.active {
+      background-color: rgba(243, 196, 119, 0.1);
+      border-color: var(--color-status-warning);
+      color: var(--color-status-warning);
+    }
+
+    /* Main Review Canvas */
+    .preview-canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0b0c0e;
+      position: relative;
+      overflow: hidden;
+      padding: var(--space-4);
+    }
+
+    .frame-wrapper {
+      background-color: var(--color-canvas);
+      border: 1px solid var(--color-divider);
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), height 240ms cubic-bezier(0.22, 1, 0.36, 1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: var(--color-canvas);
+    }
+
+    /* Info Bar at Bottom */
+    .spec-drawer {
+      height: 40px;
+      background-color: var(--color-canvas);
+      border-top: 1px solid var(--color-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      flex-shrink: 0;
+    }
+
+    .spec-drawer a {
+      color: var(--color-text-primary);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Toolbar -->
+  <header class="review-toolbar">
+    <div class="toolbar-brand">
+      <span class="brand-title">Learntify UI Prototype</span>
+      <span class="review-badge">Ready for Juan's Review</span>
+    </div>
+
+    <!-- Active Board / Composition Selector -->
+    <nav class="composition-tabs" aria-label="Review Compositions">
+      <button class="tab-btn active" data-src="../boards/desktop-lesson.html" data-vp="desktop">
+        <span>Desktop Lesson (2 + 3)</span>
+      </button>
+      <button class="tab-btn" data-src="../boards/mobile-lesson-drawer.html" data-vp="mobile">
+        <span>Spanish Phone + Drawer</span>
+      </button>
+      <button class="tab-btn" data-src="../boards/mobile-lesson-unobscured.html" data-vp="mobile">
+        <span>Spanish Phone (Unobscured)</span>
+      </button>
+      <button class="tab-btn" data-src="../boards/welcome-page.html" data-vp="desktop">
+        <span>Welcome Page</span>
+      </button>
+      <button class="tab-btn" data-src="../boards/future-concepts.html" data-vp="desktop">
+        <span>Future Concepts</span>
+      </button>
+    </nav>
+
+    <!-- Controls -->
+    <div class="toolbar-actions">
+      <div class="viewport-group" aria-label="Simulate Viewport">
+        <button class="vp-btn active" data-width="100%" data-height="100%" id="vp-desktop">Full</button>
+        <button class="vp-btn" data-width="768px" data-height="900px" id="vp-tablet">768</button>
+        <button class="vp-btn" data-width="390px" data-height="844px" id="vp-mobile">390</button>
+      </div>
+
+      <button class="toggle-motion-btn" id="motion-toggle" title="Toggle reduced motion preference">
+        <span>Reduced Motion: OFF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive Canvas Container -->
+  <main class="preview-canvas-container">
+    <div class="frame-wrapper" id="frame-wrap" style="width: 100%; height: 100%;">
+      <iframe id="board-frame" src="../boards/desktop-lesson.html" title="Learntify Design Board Frame"></iframe>
+    </div>
+  </main>
+
+  <!-- Spec Footer -->
+  <footer class="spec-drawer">
+    <div>
+      Tokens: Canvas <code>#101214</code> · Reading <code>#171A1D</code> · Raised <code>#202529</code> · Divider <code>#343B40</code> · Action <code>#F3F1EB</code>
+    </div>
+    <div>
+      View full specification: <a href="../HANDOFF.md">HANDOFF.md</a>
+    </div>
+  </footer>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const iframe = document.getElementById('board-frame');
+    const frameWrap = document.getElementById('frame-wrap');
+    const vpBtns = document.querySelectorAll('.vp-btn');
+    const motionBtn = document.getElementById('motion-toggle');
+
+    let reducedMotion = false;
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const src = tab.dataset.src;
+        iframe.src = src;
+
+        const defaultVp = tab.dataset.vp;
+        if (defaultVp === 'mobile') {
+          setViewport('390px', '844px', document.getElementById('vp-mobile'));
+        } else {
+          setViewport('100%', '100%', document.getElementById('vp-desktop'));
+        }
+      });
+    });
+
+    function setViewport(w, h, activeBtn) {
+      vpBtns.forEach(b => b.classList.remove('active'));
+      activeBtn?.classList.add('active');
+      frameWrap.style.width = w;
+      frameWrap.style.height = h;
+    }
+
+    document.getElementById('vp-desktop').addEventListener('click', function() {
+      setViewport('100%', '100%', this);
+    });
+    document.getElementById('vp-tablet').addEventListener('click', function() {
+      setViewport('768px', '900px', this);
+    });
+    document.getElementById('vp-mobile').addEventListener('click', function() {
+      setViewport('390px', '844px', this);
+    });
+
+    motionBtn.addEventListener('click', () => {
+      reducedMotion = !reducedMotion;
+      motionBtn.classList.toggle('active', reducedMotion);
+      motionBtn.textContent = `Reduced Motion: ${reducedMotion ? 'ON' : 'OFF'}`;
+      // Broadcast reduced motion state to iframe if accessible
+      try {
+        iframe.contentWindow?.document.documentElement.classList.toggle('reduce-motion', reducedMotion);
+      } catch(e) {}
+    });
+  </script>
+</body>
+</html>

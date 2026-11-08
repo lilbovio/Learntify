@@ -13,6 +13,8 @@ export interface DraftPort {
 }
 export type DraftState = {
   opened?: true;
+  sessionExpired?: boolean;
+  saveLimited?: boolean;
   content: string;
   status: 'loading' | 'saved' | 'pending' | 'saving' | 'error' | 'conflict';
   dirty: boolean;
@@ -36,7 +38,13 @@ export class DraftSync {
 
   private emit(update: Partial<DraftState>) {
     if (this.disposed) return;
-    this.state = { ...this.state, ...update };
+    this.state = {
+      ...this.state,
+      ...(update.status && update.status !== 'error'
+        ? { sessionExpired: false, saveLimited: false }
+        : {}),
+      ...update,
+    };
     this.changed(this.state);
   }
   async start() {
@@ -48,8 +56,13 @@ export class DraftSync {
       if (this.disposed) return;
       this.draft = draft;
       this.emit({ content: draft.content, status: 'saved', dirty: false, opened: true });
-    } catch {
-      this.emit({ status: 'error' });
+    } catch (error) {
+      this.emit({
+        status: 'error',
+        sessionExpired: error instanceof ApiError && error.status === 401,
+        saveLimited:
+          error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
+      });
     } finally {
       this.busy = false;
     }
@@ -78,6 +91,10 @@ export class DraftSync {
   async retry() {
     if (!this.draft) return this.start();
     if (this.state.status === 'conflict') return;
+    if (!this.state.dirty && !this.pending) {
+      this.emit({ status: 'saved' });
+      return this.refresh();
+    }
     return this.save();
   }
   private async save() {
@@ -107,10 +124,23 @@ export class DraftSync {
         try {
           const remote = await this.api.getDraft(operation.id);
           this.emit({ status: 'conflict', remote, dirty: true });
-        } catch {
-          this.emit({ status: 'error', dirty: true });
+        } catch (cause) {
+          this.emit({
+            status: 'error',
+            dirty: true,
+            sessionExpired: cause instanceof ApiError && cause.status === 401,
+            saveLimited:
+              cause instanceof ApiError && (cause.status === 429 || cause.code === 'WRITES_PAUSED'),
+          });
         }
-      } else this.emit({ status: 'error', dirty: true });
+      } else
+        this.emit({
+          status: 'error',
+          dirty: true,
+          sessionExpired: error instanceof ApiError && error.status === 401,
+          saveLimited:
+            error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
+        });
     } finally {
       this.busy = false;
       if (this.state.status === 'pending') this.schedule();
@@ -149,8 +179,13 @@ export class DraftSync {
       if (this.disposed) return;
       this.draft = draft;
       this.emit({ content: draft.content, status: 'saved', dirty: false });
-    } catch {
-      this.emit({ status: 'error' });
+    } catch (error) {
+      this.emit({
+        status: 'error',
+        sessionExpired: error instanceof ApiError && error.status === 401,
+        saveLimited:
+          error instanceof ApiError && (error.status === 429 || error.code === 'WRITES_PAUSED'),
+      });
     } finally {
       this.busy = false;
     }

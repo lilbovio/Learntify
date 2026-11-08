@@ -14,6 +14,9 @@ describe('published starter lesson', () => {
       'writing-functions',
       'collecting-with-arrays',
       'describing-with-objects',
+      'building-a-basket-total',
+      'building-a-study-summary',
+      'project-basket-total',
     ]);
     expect(listLessons('es').map((lesson) => lesson.id)).toEqual(
       english.map((lesson) => lesson.id),

@@ -3,6 +3,7 @@ import { parsePreviewEmails } from './auth/preview-admission';
 import { readSocialCredentials, type SocialCredentials } from './auth/social';
 
 export interface ProductionBindings {
+  PRIVATE_WRITES?: string;
   ACCOUNT_MODE?: string;
   APP_ORIGIN?: string;
   AUTH_SECRET?: string;
@@ -28,6 +29,7 @@ export type AccountConfiguration =
       from: string;
       previewEmails: ReadonlySet<string>;
       socialProviders: SocialCredentials;
+      writesPaused: boolean;
     };
 
 /** Reports field names only. Never include values in diagnostics or HTTP responses. */
@@ -40,6 +42,8 @@ export function readAccountConfiguration(
   if (env.ACCOUNT_MODE !== 'existing-accounts')
     return { kind: 'invalid', fields: ['ACCOUNT_MODE'] };
   const fields: string[] = [];
+  if (env.PRIVATE_WRITES !== undefined && !['enabled', 'paused'].includes(env.PRIVATE_WRITES))
+    fields.push('PRIVATE_WRITES');
   const social = readSocialCredentials({ ...env });
   fields.push(...social.fields);
   const previewEmails = parsePreviewEmails(env.PREVIEW_EMAILS);
@@ -81,5 +85,6 @@ export function readAccountConfiguration(
     from: env.EMAIL_FROM!,
     previewEmails: previewEmails!,
     socialProviders: social.credentials,
+    writesPaused: env.PRIVATE_WRITES === 'paused',
   };
 }

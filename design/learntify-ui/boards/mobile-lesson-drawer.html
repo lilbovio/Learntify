@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Lesson (Spanish Phone + Drawer Open) · Learntify Design Board</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0b0c0e;
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: var(--space-6);
+    }
+
+    .device-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .board-header {
+      text-align: center;
+      margin-bottom: var(--space-2);
+    }
+    .board-header h1 {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .board-header p {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+    }
+
+    /* iPhone 14/15/Pro frame: 390px x 844px */
+    .mobile-phone-frame {
+      width: 390px;
+      height: 844px;
+      background-color: var(--color-canvas);
+      border: 1px solid var(--color-divider);
+      border-radius: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    /* Phone Status Bar / Island mockup */
+    .status-bar {
+      height: 44px;
+      padding: 0 var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      user-select: none;
+      z-index: 20;
+    }
+    .dynamic-island {
+      width: 100px;
+      height: 24px;
+      background: #000;
+      border-radius: 20px;
+      margin: 0 auto;
+    }
+
+    /* App Header for Mobile */
+    .app-header-mobile {
+      height: 56px;
+      padding: 0 var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--color-canvas);
+      border-bottom: 1px solid var(--color-divider);
+      z-index: 20;
+    }
+
+    .brand {
+      color: var(--color-text-primary);
+      text-decoration: none;
+      font-size: var(--text-lg);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    .brand-dot {
+      color: var(--color-text-tertiary);
+    }
+
+    .menu-button {
+      background: transparent;
+      border: 1px solid var(--color-divider);
+      color: var(--color-text-primary);
+      border-radius: var(--radius-control);
+      padding: 6px 12px;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .menu-button:focus-visible {
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    .menu-icon {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 14px;
+    }
+    .menu-icon span {
+      display: block;
+      height: 1.5px;
+      background-color: var(--color-text-primary);
+      border-radius: 1px;
+    }
+
+    /* Background Lesson (Behind drawer) */
+    .mobile-lesson-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      filter: blur(1px); /* Subtly softened when drawer is open */
+      opacity: 0.35;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .lesson-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
+
+    .lesson-title h1 {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-1);
+    }
+    .lesson-title .objective {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+    }
+
+    /* Drawer Backdrop */
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(16, 18, 20, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      animation: backdropFade 180ms ease-out forwards;
+    }
+
+    @keyframes backdropFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Mobile Drawer */
+    .mobile-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 310px;
+      background-color: var(--color-surface-reading);
+      border-left: 1px solid var(--color-divider);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+      animation: drawerSlide 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes drawerSlide {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-head {
+      height: 64px;
+      padding: 0 var(--space-5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: 1px solid var(--color-divider);
+      color: var(--color-text-secondary);
+      border-radius: var(--radius-control);
+      padding: 6px 12px;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .drawer-close:hover {
+      color: var(--color-text-primary);
+      border-color: var(--color-outline-interactive);
+    }
+    .drawer-close:focus-visible {
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .drawer-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .drawer-group-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-2);
+      padding-left: var(--space-2);
+    }
+
+    .drawer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: var(--radius-control);
+      text-decoration: none;
+      color: var(--color-text-secondary);
+      font-size: var(--text-base);
+      font-weight: 500;
+      transition: background-color var(--duration-interactive), color var(--duration-interactive);
+    }
+
+    .drawer-link:hover {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+    }
+
+    .drawer-link:focus-visible {
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    /* Active Route Marker & Weight */
+    .drawer-link[aria-current="page"] {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+      font-weight: 600;
+      border: 1px solid var(--color-divider);
+      position: relative;
+    }
+
+    .active-marker {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--color-text-primary);
+    }
+
+    .drawer-footer {
+      padding: var(--space-4) var(--space-5);
+      border-top: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .language-selector-mobile {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .language-pill-group {
+      display: flex;
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      overflow: hidden;
+    }
+
+    .language-pill {
+      padding: 5px 12px;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--color-text-secondary);
+    }
+
+    .language-pill.active {
+      background-color: var(--color-action-primary-fill);
+      color: var(--color-action-primary-label);
+    }
+
+    .home-indicator {
+      width: 134px;
+      height: 5px;
+      background-color: #ffffff33;
+      border-radius: 3px;
+      margin: 8px auto 6px;
+      z-index: 70;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-wrapper">
+    <div class="board-header">
+      <h1>Spanish Mobile View · Navigation Drawer Open</h1>
+      <p>Viewport: 390 × 844px (iPhone) · Route: /es/learn/lessons/values-and-expressions</p>
+    </div>
+
+    <div class="mobile-phone-frame" role="region" aria-label="Mobile viewport prototype">
+      <!-- Status Bar -->
+      <div class="status-bar" aria-hidden="true">
+        <span>9:41</span>
+        <div class="dynamic-island"></div>
+        <span>100%</span>
+      </div>
+
+      <!-- Mobile Top Bar -->
+      <header class="app-header-mobile">
+        <a class="brand" href="/es">
+          learntify<span class="brand-dot" aria-hidden="true">.</span>
+        </a>
+        <button class="menu-button" type="button" aria-expanded="true" aria-controls="mobile-menu" aria-label="Cerrar menú">
+          <span class="menu-icon" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </span>
+          Menú
+        </button>
+      </header>
+
+      <!-- Dimmed Background Lesson Content -->
+      <div class="mobile-lesson-body" aria-hidden="true">
+        <div class="lesson-meta">
+          <span class="eyebrow">JavaScript / Fundamentos</span>
+        </div>
+        <div class="lesson-title">
+          <h1>De valores a expresiones</h1>
+          <p class="objective">Predice un valor antes de ejecutar un programa.</p>
+        </div>
+        <div style="background: #171A1D; padding: 12px; border-radius: 8px; border: 1px solid #343B40;">
+          <p style="font-size: 14px; margin-bottom: 8px;">Una expresión produce un valor. JavaScript evalúa <code>2 + 3</code> para obtener <code>5</code>.</p>
+          <pre style="background: #101214; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 13px;">console.log(2 + 3);</pre>
+        </div>
+      </div>
+
+      <!-- Translucent Backdrop -->
+      <div class="drawer-backdrop" id="backdrop"></div>
+
+      <!-- Open Navigation Drawer (Spanish) -->
+      <aside class="mobile-drawer" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Navegación principal">
+        <div class="drawer-head">
+          <span class="brand">
+            learntify<span class="brand-dot" aria-hidden="true">.</span>
+          </span>
+          <button class="drawer-close" type="button" aria-label="Cerrar navegación" id="close-drawer">
+            <span>Cerrar</span>
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <div class="drawer-body">
+          <!-- Grupo Estudiar -->
+          <nav class="drawer-group" aria-label="Estudiar">
+            <p class="drawer-group-label">Estudiar</p>
+            <a class="drawer-link" href="/es/today">
+              <span>Hoy</span>
+            </a>
+            <!-- Active destination with marker and bold weight -->
+            <a class="drawer-link" href="/es/learn" aria-current="page">
+              <span>Aprender</span>
+              <span class="active-marker" aria-hidden="true"></span>
+            </a>
+            <a class="drawer-link" href="/es/practice">
+              <span>Practicar</span>
+            </a>
+          </nav>
+
+          <!-- Grupo Tu trabajo -->
+          <nav class="drawer-group" aria-label="Tu trabajo">
+            <p class="drawer-group-label">Tu trabajo</p>
+            <a class="drawer-link" href="/es/projects">
+              <span>Proyectos</span>
+            </a>
+            <a class="drawer-link" href="/es/notebook">
+              <span>Cuaderno</span>
+            </a>
+            <a class="drawer-link" href="/es/study-plans">
+              <span>Planes</span>
+            </a>
+            <a class="drawer-link" href="/es/progress">
+              <span>Progreso</span>
+            </a>
+          </nav>
+
+          <!-- Grupo Cuenta -->
+          <div class="drawer-group" aria-label="Cuenta">
+            <p class="drawer-group-label">Cuenta</p>
+            <a class="drawer-link" href="/es/settings">
+              <span>Configuración</span>
+            </a>
+            <a class="drawer-link" href="/es/auth">
+              <span>Iniciar sesión</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Drawer Footer: Selector de idioma -->
+        <div class="drawer-footer">
+          <div class="language-selector-mobile">
+            <span>Idioma / Language</span>
+            <div class="language-pill-group">
+              <span class="language-pill active" aria-current="true">ES</span>
+              <a class="language-pill" href="/en/learn/lessons/values-and-expressions">EN</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- iPhone Home Indicator -->
+        <div class="home-indicator" aria-hidden="true"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const closeBtn = document.getElementById('close-drawer');
+    const backdrop = document.getElementById('backdrop');
+    const drawer = document.getElementById('mobile-menu');
+
+    function close() {
+      drawer.style.animation = 'none';
+      drawer.style.transform = 'translateX(100%)';
+      drawer.style.transition = 'transform 180ms ease-in';
+      backdrop.style.opacity = '0';
+      backdrop.style.transition = 'opacity 180ms ease-in';
+      setTimeout(() => {
+        window.location.href = 'mobile-lesson-unobscured.html';
+      }, 190);
+    }
+
+    closeBtn?.addEventListener('click', close);
+    backdrop?.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+  </script>
+</body>
+</html>

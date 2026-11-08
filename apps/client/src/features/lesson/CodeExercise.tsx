@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Lesson, Locale } from '@learntify/api-contracts';
 import { SaveAttempt } from './SaveAttempt';
 import { useCodeDraft } from '../draft/useCodeDraft';
 import { CodeDraftStatus } from '../draft/CodeDraftStatus';
+import { DownloadWork } from '../../shared/DownloadWork';
 import { AttemptHistory } from './AttemptHistory';
 
 const copy = {
@@ -61,8 +63,22 @@ export function CodeExercise({
   const editable = accountReady && draft.ready;
   const [running, setRunning] = useState(false);
   const [attemptId, setAttemptId] = useState('');
-  const [result, setResult] = useState<{ output: string[]; error?: string }>();
+  type RunResult = {
+    output: string[];
+    error?: string;
+    checks?: Array<{ passed: boolean; actual: string }>;
+  };
+  const [result, setResult] = useState<RunResult>();
+  const reduced = useReducedMotion();
+  const resultRef = useRef<HTMLDivElement>(null);
   const active = useRef<{ worker: Worker; timer: ReturnType<typeof setTimeout> } | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    const node = resultRef.current;
+    if (!node) return;
+    node.focus({ preventScroll: true });
+    node.scrollIntoView({ block: 'nearest' });
+  }, [result]);
   function dispose() {
     if (active.current) {
       active.current.worker.terminate();
@@ -87,7 +103,7 @@ export function CodeExercise({
     setResult(undefined);
     try {
       const worker = new Worker(new URL('./runner.worker.ts', import.meta.url), { type: 'module' });
-      const finish = (value: { output: string[]; error?: string }) => {
+      const finish = (value: RunResult) => {
         if (active.current?.worker !== worker) return;
         dispose();
         setRunning(false);
@@ -97,10 +113,9 @@ export function CodeExercise({
         worker,
         timer: setTimeout(() => finish({ output: [], error: text.timeout }), 5000),
       };
-      worker.onmessage = (event: MessageEvent<{ output: string[]; error?: string }>) =>
-        finish(event.data);
+      worker.onmessage = (event: MessageEvent<RunResult>) => finish(event.data);
       worker.onerror = () => finish({ output: [], error: text.unavailable });
-      worker.postMessage(code);
+      worker.postMessage(lesson.coding.checks ? { code, checks: lesson.coding.checks } : code);
     } catch {
       dispose();
       setRunning(false);
@@ -110,69 +125,189 @@ export function CodeExercise({
   const passed =
     result &&
     !result.error &&
-    JSON.stringify(result.output) === JSON.stringify(lesson.coding.expectedOutput);
+    (lesson.coding.checks
+      ? result.checks?.length === lesson.coding.checks.length &&
+        result.checks.every((check) => check.passed)
+      : JSON.stringify(result.output) === JSON.stringify(lesson.coding.expectedOutput));
   return (
     <section className="code-exercise" aria-labelledby="code-title">
-      <h3 id="code-title">{text.title}</h3>
-      <p>{lesson.coding.prompt}</p>
-      <label htmlFor="code-editor">{text.editor}</label>
-      <textarea
-        id="code-editor"
-        className="code-editor"
-        value={code}
-        maxLength={16000}
-        spellCheck={false}
-        autoCapitalize="off"
-        autoCorrect="off"
-        disabled={running || !editable}
-        onChange={(event) => change(event.target.value)}
-      />
-      <div className="practice-actions">
-        <button type="button" disabled={running || !editable} onClick={run}>
-          {text.run}
-        </button>
-        {running && (
-          <button
-            type="button"
-            onClick={() => {
-              dispose();
-              setRunning(false);
-              setResult({ output: [], error: text.stopped });
-            }}
-          >
-            {text.stop}
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={running || !editable}
-          onClick={() => change(lesson.example)}
-        >
-          {text.reset}
-        </button>
-      </div>
-      {accountId ? (
-        <CodeDraftStatus
-          state={draft.state}
-          locale={locale}
-          retry={draft.retry}
-          resolve={draft.resolve}
-        />
-      ) : (
-        draft.localSaved !== undefined && (
-          <small>{draft.localSaved ? text.saved : text.unsaved}</small>
-        )
-      )}
-      <h4>{text.expected}</h4>
-      <pre>{lesson.coding.expectedOutput.join('\n')}</pre>
-      {result && (
-        <div role="status">
-          <h4>{text.output}</h4>
-          <pre>{result.output.join('\n') || '—'}</pre>
-          <p>{result.error || (passed ? text.pass : text.retry)}</p>
+      <header className="code-heading">
+        <div>
+          <p className="eyebrow">
+            <span className="stage-kicker-number" aria-hidden="true">
+              02 ·{' '}
+            </span>
+            {locale === 'en' ? 'Run' : 'Ejecuta'}
+          </p>
+          <h3 id="code-title">{text.title}</h3>
         </div>
+        <p className="code-prompt">{lesson.coding.prompt}</p>
+      </header>
+      <div className="code-workbench">
+        <div className="code-editor-pane">
+          <div className="editor-toolbar">
+            <label htmlFor="code-editor">{text.editor}</label>
+            <span>JavaScript</span>
+          </div>
+          <textarea
+            id="code-editor"
+            className="code-editor"
+            value={code}
+            maxLength={16000}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            wrap="off"
+            rows={12}
+            disabled={running || !editable}
+            onChange={(event) => change(event.target.value)}
+          />
+          <div className="practice-actions code-actions">
+            <button className="run-key" type="button" disabled={running || !editable} onClick={run}>
+              {text.run}
+            </button>
+            {running && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  dispose();
+                  setRunning(false);
+                  setResult({ output: [], error: text.stopped });
+                }}
+              >
+                {text.stop}
+              </button>
+            )}
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={running || !editable}
+              onClick={() => change(lesson.example)}
+            >
+              {text.reset}
+            </button>
+          </div>
+          <DownloadWork
+            content={code}
+            filename={`${lesson.id}.js`}
+            locale={locale}
+            disabled={!draft.ready}
+          />
+          {accountId ? (
+            <CodeDraftStatus
+              state={draft.state}
+              locale={locale}
+              retry={draft.retry}
+              resolve={draft.resolve}
+            />
+          ) : (
+            draft.localSaved !== undefined && (
+              <small>{draft.localSaved ? text.saved : text.unsaved}</small>
+            )
+          )}
+        </div>
+        <div
+          className="code-output-pane"
+          aria-label={locale === 'en' ? 'Code output' : 'Salida del código'}
+        >
+          <div className="output-heading">
+            <h4>{text.output}</h4>
+            {passed && (
+              <span className="success-label">
+                <span aria-hidden="true">✓</span> {locale === 'en' ? 'Output matches' : 'Coincide'}
+              </span>
+            )}
+          </div>
+          {result ? (
+            <motion.div
+              ref={resultRef}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: reduced ? 0 : 0.12 }}
+              className={
+                'run-result' +
+                (result.error ? ' run-result-error' : passed ? ' run-result-success' : '')
+              }
+              role="status"
+              tabIndex={-1}
+            >
+              <pre className="run-output">{result.output.join('\n') || '—'}</pre>
+              <p className={result.error ? 'error-text' : undefined}>
+                {result.error ||
+                  (lesson.coding.checks
+                    ? passed
+                      ? locale === 'en'
+                        ? 'All project checks passed. Review and explain your solution.'
+                        : 'Todas las pruebas pasaron. Revisa y explica tu solución.'
+                      : locale === 'en'
+                        ? 'Review the failing checks and try again.'
+                        : 'Revisa las pruebas que fallan e inténtalo de nuevo.'
+                    : passed
+                      ? text.pass
+                      : text.retry)}
+              </p>
+            </motion.div>
+          ) : (
+            <div className="output-empty">
+              <p>
+                {locale === 'en'
+                  ? 'Run your code to see what it prints.'
+                  : 'Ejecuta tu código para ver lo que imprime.'}
+              </p>
+              {!lesson.coding.checks && (
+                <>
+                  <h4>{text.expected}</h4>
+                  <pre>{lesson.coding.expectedOutput.join('\n')}</pre>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {lesson.coding.checks && (
+        <section
+          className="project-checks"
+          aria-label={locale === 'en' ? 'Project checks' : 'Pruebas del proyecto'}
+        >
+          <h4>{locale === 'en' ? 'Function checks' : 'Pruebas de la función'}</h4>
+          <p>
+            {locale === 'en'
+              ? 'These visible examples check returned values. They are not exhaustive or tamper-proof, and do not certify mastery.'
+              : 'Estos ejemplos visibles comprueban valores devueltos. No son exhaustivos ni a prueba de manipulación y no certifican dominio.'}
+          </p>
+          <ul>
+            {lesson.coding.checks.map((check, index) => (
+              <li key={check.label}>
+                <strong>{check.label}</strong> —{' '}
+                {result?.checks?.[index]
+                  ? result.checks[index].passed
+                    ? locale === 'en'
+                      ? 'Passed'
+                      : 'Correcto'
+                    : `${locale === 'en' ? 'Needs work' : 'Revisar'}: ${result.checks[index].actual}`
+                  : locale === 'en'
+                    ? 'Not checked'
+                    : 'Sin comprobar'}
+                <details>
+                  <summary>{locale === 'en' ? 'View case' : 'Ver caso'}</summary>
+                  <pre>{check.expression}</pre>
+                  <p>
+                    {text.expected}: {check.expected}
+                  </p>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-      <p className="practice-note">{text.note}</p>
+      <p className="practice-note">
+        {lesson.coding.checks
+          ? locale === 'en'
+            ? 'Checks run in your browser and saved attempts are self-reported practice. Synchronous JavaScript only; browser APIs are unavailable.'
+            : 'Las pruebas se ejecutan en tu navegador y los intentos guardados son práctica informada por el cliente. Solo JavaScript síncrono; las API del navegador no están disponibles.'
+          : text.note}
+      </p>
       {result && accountId && (
         <SaveAttempt
           key={accountId + ':' + attemptId}

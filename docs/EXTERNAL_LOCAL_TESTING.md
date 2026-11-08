@@ -41,7 +41,7 @@ pnpm dev:external:client
 
 Open `http://localhost:5175`. The client proxies `/api` to port 8789. Sign in with your single permitted email, open the email link on this machine, set learning preferences, save notes, reload, and sign out. Check that notes and preferences persist in the test database and that signed-out private requests are denied. Test addresses that are not admitted must not cause email delivery. Real requests consume provider quotas; automated tests use disposable local databases and simulated mail delivery instead.
 
-The profile is explicitly restricted to HTTP loopback, one recipient, and the Resend testing sender. Production retains its HTTPS-only configuration. This test does not validate deployed HTTPS cookies, edge CPU limits, backup recovery or public load capacity.
+For Learntify's verified sending domain, set `EMAIL_FROM` in the ignored external Wrangler configuration to the plain address `signin@mail.learntify.lat` and restart the external server. The profile accepts this sender and the original Resend sandbox sender. Both use the same single-recipient restriction and HTTP loopback origin. Check the From address in the delivered message and open the sign-in link on the same computer.
 
 ## Other services
 
@@ -49,4 +49,3 @@ The profile is explicitly restricted to HTTP loopback, one recipient, and the Re
 - Google and GitHub integration now supports explicit account linking and sign-in. Configure both using [OAuth local testing](OAUTH_LOCAL_TESTING.md); live provider testing remains separate from email verification.
 - Turnstile integration is still pending. It is needed before public signup, not to exercise the current single-account preview.
 - Durable Objects are deferred with moderated chat. MongoDB, Redis and paid auth services are not needed.
-- Domain purchase and verification remain deferred. Do not enable delivery to other recipients using the testing sender.

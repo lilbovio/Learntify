@@ -2,8 +2,30 @@ import { getQuickJS } from 'quickjs-emscripten';
 
 // Learner code runs inside the VM, never in the browser's JavaScript realm.
 self.onmessage = async (event: MessageEvent<string>) => {
-  if (typeof event.data !== 'string' || event.data.length > 16000) return;
+  const request =
+    typeof event.data === 'string'
+      ? { code: event.data, checks: [] }
+      : (event.data as unknown as {
+          code: string;
+          checks: Array<{ expression: string; expected: number }>;
+        });
+  if (
+    !request ||
+    typeof request.code !== 'string' ||
+    request.code.length > 16000 ||
+    !Array.isArray(request.checks) ||
+    request.checks.length > 20 ||
+    request.checks.some(
+      (check) =>
+        !check ||
+        typeof check.expression !== 'string' ||
+        check.expression.length > 2000 ||
+        typeof check.expected !== 'number',
+    )
+  )
+    return;
   const output: string[] = [];
+  const checks: Array<{ passed: boolean; actual: string }> = [];
   let error: string | undefined;
   try {
     const engine = await getQuickJS();
@@ -36,7 +58,7 @@ self.onmessage = async (event: MessageEvent<string>) => {
       vm.setProp(vm.global, 'console', consoleObject);
       log.dispose();
       consoleObject.dispose();
-      const result = vm.evalCode(event.data, 'exercise.js');
+      const result = vm.evalCode(request.code, 'exercise.js');
       if (result.error) {
         const message = vm.getProp(result.error, 'message');
         error =
@@ -45,7 +67,24 @@ self.onmessage = async (event: MessageEvent<string>) => {
             : 'Execution failed.';
         message.dispose();
         result.error.dispose();
-      } else result.value.dispose();
+      } else {
+        result.value.dispose();
+        for (const check of request.checks) {
+          const evaluated = vm.evalCode(check.expression, 'check.js');
+          if (evaluated.error) {
+            checks.push({ passed: false, actual: 'Execution error' });
+            evaluated.error.dispose();
+          } else {
+            const numeric = vm.typeof(evaluated.value) === 'number';
+            const value = numeric ? vm.getNumber(evaluated.value) : undefined;
+            checks.push({
+              passed: numeric && value === check.expected,
+              actual: numeric ? String(value) : 'Not a number',
+            });
+            evaluated.value.dispose();
+          }
+        }
+      }
     } finally {
       vm.dispose();
       runtime.dispose();
@@ -53,5 +92,5 @@ self.onmessage = async (event: MessageEvent<string>) => {
   } catch {
     error = 'The runner could not finish. Try a smaller program.';
   }
-  self.postMessage({ output, error });
+  self.postMessage({ output, error, checks });
 };

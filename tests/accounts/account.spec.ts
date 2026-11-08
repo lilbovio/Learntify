@@ -78,8 +78,9 @@ test('adult learner signs in through local Worker/D1, keeps a session, and signs
   });
   await expect(page.getByText('You’re signed in.', { exact: false })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect((await page.request.get('/api/v1/me')).status()).toBe(401);
   await page.goto(link);
@@ -175,6 +176,7 @@ test('lesson notes sync across sessions and require an explicit choice on confli
   await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Open lesson', exact: false }).click();
   await expect(notes).toHaveValue('Notebook edits reach the lesson.');
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
   await expect(notes).toHaveCount(0);
 });

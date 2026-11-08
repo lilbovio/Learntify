@@ -1,0 +1,31 @@
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  // Preparation only. Copy to ignored wrangler.jsonc and replace the database ID after approval.
+  "name": "learntify-alpha",
+  "main": "../src/production.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "send_metrics": false,
+  "observability": { "enabled": false },
+  "routes": [{ "pattern": "alpha.learntify.lat", "custom_domain": true }],
+  "vars": {
+    "ACCOUNT_MODE": "existing-accounts",
+    "PRIVATE_WRITES": "paused",
+    "APP_ORIGIN": "https://alpha.learntify.lat",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "learntify-alpha",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../migrations",
+    },
+  ],
+  "assets": {
+    "directory": "../../../apps/client/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "triggers": { "crons": ["*/15 * * * *"] },
+}

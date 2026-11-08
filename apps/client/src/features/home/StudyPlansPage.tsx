@@ -1,0 +1,457 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ApiError,
+  createApiClient,
+  createStudyPlanClient,
+  type PlanActivity,
+} from '@learntify/api-client';
+import type { Locale, StudyPlan } from '@learntify/api-contracts';
+import { PageFrame } from '../../shared/PageFrame';
+import { AccountPanel } from '../account/AccountPanel';
+import { useUnsavedChanges } from '../../shared/useUnsavedChanges';
+import { SessionRecovery } from '../../shared/SessionRecovery';
+import { DownloadWork } from '../../shared/DownloadWork';
+
+export function StudyPlansPage({ locale }: { locale: Locale }) {
+  const [account, setAccount] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  return (
+    <PageFrame
+      locale={locale}
+      variant="wide"
+      eyebrow={locale === 'en' ? 'Study plans' : 'Planes de estudio'}
+      title={locale === 'en' ? 'Study plans' : 'Planes de estudio'}
+      lede={
+        locale === 'en'
+          ? 'Make room for learning. Set a weekly goal and keep your plans in one place.'
+          : 'Haz espacio para aprender. Define una meta semanal y organiza tus planes.'
+      }
+    >
+      <AccountPanel locale={locale} onAccountChange={setAccount} unsavedNotes={dirty} />
+      {account ? (
+        <PlanWorkspace key={account} locale={locale} ownerId={account} onDirtyChange={setDirty} />
+      ) : (
+        <section className="clay-card empty-state">
+          <span className="stage-label">
+            {locale === 'en' ? 'Private workspace' : 'Espacio privado'}
+          </span>
+          <h2>
+            {locale === 'en' ? 'Keep your plans together.' : 'Mantén tus planes en un solo lugar.'}
+          </h2>
+          <p>
+            {locale === 'en'
+              ? 'Sign in to create, edit and revisit your private study plans. Everything you learn stays free.'
+              : 'Inicia sesión para crear, editar y retomar tus planes privados. Todo lo que aprendes sigue siendo gratis.'}
+          </p>
+          <div className="page-actions">
+            <a className="primary-link" href={'/' + locale + '/auth'}>
+              {locale === 'en' ? 'Sign in to your plans' : 'Inicia sesión en tus planes'}
+            </a>
+            <a className="text-link" href={'/' + locale + '/start'}>
+              {locale === 'en' ? 'Set a learning direction first' : 'Definir una dirección primero'}
+            </a>
+          </div>
+        </section>
+      )}
+    </PageFrame>
+  );
+}
+function PlanWorkspace({
+  locale,
+  ownerId,
+  onDirtyChange,
+}: {
+  locale: Locale;
+  ownerId: string;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const es = locale === 'es';
+  const [plans, setPlans] = useState<StudyPlan[]>([]);
+  const [selected, setSelected] = useState<StudyPlan | null>(null);
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
+  const [minutes, setMinutes] = useState(120);
+  const [status, setStatus] = useState<StudyPlan['status']>('draft');
+  const [page, setPage] = useState(1);
+  const [refresh, setRefresh] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [slugConflict, setSlugConflict] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const [listFailed, setListFailed] = useState(false);
+  const dirty =
+    title !== (selected?.title ?? '') ||
+    slug !== (selected?.slug ?? '') ||
+    description !== (selected?.description ?? '') ||
+    minutes !== (selected?.weeklyMinutes ?? 120) ||
+    status !== (selected?.status ?? 'draft');
+  const { confirmDiscard } = useUnsavedChanges(dirty || busy, locale);
+  useEffect(() => {
+    onDirtyChange(dirty || busy);
+    return () => onDirtyChange(false);
+  }, [dirty, busy, onDirtyChange]);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error && !busy) {
+      errorRef.current?.focus();
+      errorRef.current?.scrollIntoView({ block: 'center' });
+    }
+  }, [error, busy]);
+  const [activity, setActivity] = useState<PlanActivity[]>([]);
+  const api = useMemo(
+    () => createStudyPlanClient((item) => setActivity((items) => [item, ...items].slice(0, 12))),
+    [],
+  );
+  function report(cause: unknown) {
+    setExpired(cause instanceof ApiError && cause.status === 401);
+    setSlugConflict(cause instanceof ApiError && cause.code === 'SLUG_CONFLICT');
+    if (cause instanceof ApiError && cause.code === 'PLAN_LIMIT') {
+      setError(
+        es
+          ? 'Tienes 50 planes. Elimina uno que ya no uses antes de crear otro; tus cambios siguen aquí.'
+          : 'You have 50 plans. Delete an unused plan before creating another; your changes are still here.',
+      );
+      return;
+    }
+    if (cause instanceof ApiError && (cause.status === 429 || cause.code === 'WRITES_PAUSED')) {
+      setError(
+        es
+          ? 'El guardado está temporalmente limitado. Descarga una copia y vuelve a intentarlo más tarde.'
+          : 'Saving is temporarily limited. Download a copy and try again later.',
+      );
+      return;
+    }
+    setError(
+      cause instanceof ApiError && cause.code === 'SLUG_CONFLICT'
+        ? es
+          ? 'Este identificador ya existe. Elige otro.'
+          : 'This slug already exists. Choose another.'
+        : cause instanceof ApiError && cause.status === 401
+          ? es
+            ? 'Tu sesión terminó. Inicia sesión de nuevo.'
+            : 'Your session expired. Sign in again.'
+          : cause instanceof ApiError && cause.code === 'ACCOUNT_CHANGED'
+            ? es
+              ? 'La cuenta cambió. Vuelve a iniciar sesión con la cuenta original antes de guardar.'
+              : 'The account changed. Sign back in with the original account before saving.'
+            : es
+              ? 'No se pudo completar la solicitud. Inténtalo de nuevo.'
+              : 'The request could not be completed. Try again.',
+    );
+  }
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setListFailed(false);
+    void api
+      .list(page, controller.signal)
+      .then((items) => {
+        if (!controller.signal.aborted) setPlans(items);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setListFailed(true);
+          report(cause);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [api, page, refresh]);
+  function fill(plan: StudyPlan | null) {
+    setError('');
+    setSlugConflict(false);
+    setSelected(plan);
+    setTitle(plan?.title ?? '');
+    setSlug(plan?.slug ?? '');
+    setDescription(plan?.description ?? '');
+    setMinutes(plan?.weeklyMinutes ?? 120);
+    setStatus(plan?.status ?? 'draft');
+  }
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    setError('');
+    setSlugConflict(false);
+    setMessage('');
+    try {
+      const account = await createApiClient().currentAccount();
+      if (!account) throw new ApiError('UNAUTHENTICATED', 401);
+      if (account.id !== ownerId) throw new ApiError('ACCOUNT_CHANGED', 409);
+      await action();
+      setExpired(false);
+    } catch (cause) {
+      report(cause);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="study-plans">
+      <p role="status" className="plan-status">
+        {busy ? (es ? 'Procesando…' : 'Working…') : message}
+      </p>
+      <div className="plans-layout">
+        <section className="clay-card plan-library" aria-label={es ? 'Tus planes' : 'Your plans'}>
+          <header className="panel-heading">
+            <div>
+              <p className="eyebrow">{es ? 'Biblioteca' : 'Library'}</p>
+              <h2>{es ? 'Tus planes' : 'Your plans'}</h2>
+            </div>
+            <div className="plan-actions">
+              <button
+                className="secondary-button"
+                disabled={busy || loading}
+                onClick={() => setRefresh((value) => value + 1)}
+              >
+                {es ? 'Actualizar lista' : 'Refresh list'}
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (confirmDiscard()) fill(null);
+                }}
+              >
+                {es ? 'Nuevo plan' : 'New plan'}
+              </button>
+            </div>
+          </header>
+          {loading ? (
+            <p role="status">{es ? 'Cargando…' : 'Loading…'}</p>
+          ) : listFailed ? (
+            <p role="alert">
+              {es
+                ? 'No se pudo cargar la lista. Usa Actualizar lista para reintentar.'
+                : 'The list could not be loaded. Use Refresh list to retry.'}
+            </p>
+          ) : plans.length === 0 ? (
+            <p>{es ? 'No hay planes en esta página.' : 'No plans on this page yet.'}</p>
+          ) : (
+            <ul className="plan-list">
+              {plans.map((plan) => (
+                <li key={plan.id}>
+                  <button
+                    className="plan-open"
+                    aria-label={plan.title}
+                    disabled={busy}
+                    onClick={() => {
+                      if (confirmDiscard()) void run(async () => fill(await api.get(plan.id)));
+                    }}
+                  >
+                    <strong>{plan.title}</strong>
+                    <span>
+                      {plan.weeklyMinutes} min / {es ? 'semana' : 'week'} ·{' '}
+                      {es
+                        ? { draft: 'Borrador', active: 'Activo', completed: 'Completado' }[
+                            plan.status
+                          ]
+                        : { draft: 'Draft', active: 'Active', completed: 'Completed' }[plan.status]}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="plan-actions plan-pagination">
+            <button
+              className="secondary-button"
+              disabled={busy || loading || page === 1}
+              onClick={() => setPage((value) => value - 1)}
+            >
+              {es ? 'Anterior' : 'Previous'}
+            </button>
+            <span>
+              {es ? 'Página' : 'Page'} {page}
+            </span>
+            <button
+              className="secondary-button"
+              disabled={busy || loading || plans.length < 20}
+              onClick={() => setPage((value) => value + 1)}
+            >
+              {es ? 'Siguiente' : 'Next'}
+            </button>
+          </div>
+        </section>
+        <section className="clay-card plan-editor" aria-labelledby="plan-editor-title">
+          <header className="panel-heading">
+            <div>
+              <p className="eyebrow">{es ? 'Editor' : 'Editor'}</p>
+              <h2 id="plan-editor-title">
+                {selected
+                  ? es
+                    ? 'Editar plan'
+                    : 'Edit plan'
+                  : es
+                    ? 'Crear un plan'
+                    : 'Create a plan'}
+              </h2>
+            </div>
+            {dirty && <span className="unsaved-badge">{es ? 'Sin guardar' : 'Unsaved'}</span>}
+          </header>
+          {dirty && (
+            <p className="unsaved-hint">{es ? 'Cambios sin guardar' : 'Unsaved changes'}</p>
+          )}
+          {expired && <SessionRecovery locale={locale} />}
+          {error && (
+            <p id="plan-error" className="plan-error" role="alert" tabIndex={-1} ref={errorRef}>
+              {error}
+            </p>
+          )}
+          <form
+            aria-busy={busy}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void run(async () => {
+                const input = { title, description, weeklyMinutes: minutes };
+                const plan = selected
+                  ? await api.replace(selected.id, { ...input, status })
+                  : await api.create({ ...input, slug });
+                fill(plan);
+                setRefresh((value) => value + 1);
+                setMessage(es ? 'Plan guardado.' : 'Plan saved.');
+              });
+            }}
+          >
+            <fieldset disabled={busy} className="plan-fields">
+              <label>
+                {es ? 'Título' : 'Title'}
+                <input
+                  required
+                  maxLength={120}
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                />
+              </label>
+              <label>
+                {es ? 'Identificador' : 'Slug'}
+                <input
+                  required
+                  minLength={3}
+                  maxLength={60}
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  readOnly={Boolean(selected)}
+                  aria-invalid={slugConflict || undefined}
+                  aria-describedby={slugConflict ? 'plan-error' : undefined}
+                  value={slug}
+                  onChange={(event) => {
+                    setSlug(event.target.value);
+                    if (slugConflict) {
+                      setSlugConflict(false);
+                      setError('');
+                    }
+                  }}
+                />
+              </label>
+              <small>
+                {es
+                  ? 'Usa letras minúsculas, números y guiones. No se cambia después de crear el plan.'
+                  : 'Use lowercase letters, numbers and hyphens. The slug stays fixed after creation.'}
+              </small>
+              <div>
+                <label htmlFor="plan-description">{es ? 'Descripción' : 'Description'}</label>
+                <textarea
+                  id="plan-description"
+                  maxLength={2000}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </div>
+              <div className="plan-field-row">
+                <label>
+                  {es ? 'Minutos por semana' : 'Minutes per week'}
+                  <input
+                    type="number"
+                    required
+                    min={15}
+                    max={1200}
+                    step={1}
+                    value={minutes}
+                    onChange={(event) => setMinutes(Number(event.target.value))}
+                  />
+                </label>
+                {selected && (
+                  <div>
+                    <label htmlFor="plan-status">{es ? 'Estado' : 'Status'}</label>
+                    <select
+                      id="plan-status"
+                      value={status}
+                      onChange={(event) => setStatus(event.target.value as StudyPlan['status'])}
+                    >
+                      <option value="draft">{es ? 'Borrador' : 'Draft'}</option>
+                      <option value="active">{es ? 'Activo' : 'Active'}</option>
+                      <option value="completed">{es ? 'Completado' : 'Completed'}</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="plan-save-row">
+                <button type="submit">
+                  {selected
+                    ? es
+                      ? 'Guardar cambios'
+                      : 'Save changes'
+                    : es
+                      ? 'Crear plan'
+                      : 'Create plan'}
+                </button>
+                <DownloadWork
+                  content={JSON.stringify(
+                    { title, slug, description, weeklyMinutes: minutes, status },
+                    null,
+                    2,
+                  )}
+                  filename="study-plan.json"
+                  locale={locale}
+                />
+              </div>
+            </fieldset>
+          </form>
+          {selected && (
+            <div className="plan-danger">
+              <button
+                className="danger-button"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      es
+                        ? '¿Eliminar este plan? Esta acción no se puede deshacer.'
+                        : 'Delete this plan? This cannot be undone.',
+                    )
+                  )
+                    void run(async () => {
+                      await api.delete(selected.id);
+                      fill(null);
+                      setRefresh((value) => value + 1);
+                      setMessage(es ? 'Plan eliminado.' : 'Plan deleted.');
+                    });
+                }}
+              >
+                {es ? 'Eliminar plan' : 'Delete plan'}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+      <details className="clay-card plan-activity">
+        <summary>{es ? 'Actividad de la API (demostración)' : 'API activity (demo)'}</summary>
+        <p>
+          {es
+            ? 'Solicitudes reales de esta pantalla. No incluye cookies ni credenciales.'
+            : 'Actual requests from this screen. Cookies and credentials are excluded.'}
+        </p>
+        {activity.map((item, index) => (
+          <details key={index}>
+            <summary>
+              {item.method} {item.path} → {item.status}
+            </summary>
+            <pre>{JSON.stringify({ request: item.request, response: item.response }, null, 2)}</pre>
+          </details>
+        ))}
+      </details>
+    </div>
+  );
+}

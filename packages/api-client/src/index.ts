@@ -259,3 +259,5 @@ export function createApiClient(fetcher: typeof fetch = fetch) {
 }
 
 export type { Lesson, LessonListItem, Locale, PredictionFeedback } from '@learntify/api-contracts';
+
+export { createStudyPlanClient, type PlanActivity } from './study-plans';

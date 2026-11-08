@@ -14,7 +14,7 @@ export default {
     const configuration = readAccountConfiguration(env, 'local-external');
     if (
       configuration.kind !== 'ready' ||
-      configuration.from !== 'onboarding@resend.dev' ||
+      !['onboarding@resend.dev', 'signin@mail.learntify.lat'].includes(configuration.from) ||
       configuration.previewEmails.size !== 1
     )
       return new Response('Complete the local external-services configuration.', {

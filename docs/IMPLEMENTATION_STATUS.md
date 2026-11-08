@@ -1,10 +1,38 @@
 # Implementation status
 
-Updated October 25, 2026.
+Updated October 31, 2026.
+
+## Final alpha gate preparation
+
+The owner requested preparation only on October 31; deployment still requires approval and no pilot testers are available. The final gate remains open. See [the concrete alpha release handoff](ALPHA_RELEASE.md) for the proposed origin, isolated resources, operator checks and bilingual learner rehearsal.
+
+The server now reports routed 5xx failures using request IDs and fixed feature categories without raw request or exception contents. `pnpm check:preview <origin> <public|accounts>` provides credential-free, time-bounded smoke checks. A browser regression invokes the actual Node command against the built Worker. The proposed alpha configuration has a separate CI dry run, a placeholder database ID, no credentials and paused private writes. No deployment or external resource change was performed.
+
+October 31 local validation passed: `pnpm check` with 82 tests and five architecture tests, all three preview browser tests (including the actual command invocation), and the separate alpha-template dry run. Check the branch's CI result for this batch before promoting it; earlier green runs do not validate later commits.
+
+## Study Plans coursework module
+
+Study Plans now has authenticated GET list, GET by ID, POST, PUT and DELETE routes backed by D1, a bilingual CRUD screen, and an optional real-request activity panel for demonstrations. The controller, domain service/entity and storage adapter follow package dependency boundaries. Migration 0007 adds owner-scoped uniqueness and account-deletion cascading. See [the demo guide](college/DEMO.md), [OpenAPI contract](college/openapi-study-plans.yaml), and [diagrams](college/diagrams.md). This delivers a focused coursework module; it does not change the alpha release stage.
+
+## Alpha stabilization
+
+Unsaved study-plan and preference edits now have navigation/discard protection. Session recovery keeps current tab input available, with account checks before retrying plan/preference saves. Draft sync and saved attempts expose sign-in recovery, and failed list requests are distinguished from empty results. Shared form spacing, focus indicators, invalid states, mobile layouts and reduced-motion behavior received an incremental pass. The learning-to-plan rehearsal covers failed/expired saves and cancelled navigation. See [alpha acceptance and preview handoff](ALPHA_ACCEPTANCE.md) for remaining environment gates.
+
+## Capacity, recovery and preview artifact
+
+Private writes now have atomic daily reservations (2,000/account, 10,000/global) and a PRIVATE_WRITES pause switch. Study plan storage is bounded at 50 per account. Migration 0008 is applied to the dedicated external-test D1 database. Code, notes and plans have explicit downloadable copies; capacity failures retain current input. Retry-journal/counter cleanup is implemented through a bounded scheduled handler. Synthetic snapshot restore, deletion replay, session invalidation and database integrity are tested locally. This does not claim provider backup retention or a deployed recovery exercise.
+
+The preview example bundles the separate client/server code behind one origin, with API routes handled by the Worker and localized deep links handled by the static SPA. Its local browser suite verifies routing, compiled execution and offline downloads. CI now includes that suite and a third deployment dry run. No preview or production deployment has been performed.
+
+Use [the 20-check alpha scope](ALPHA_SCOPE.md) to interpret progress. Checks 1–19 are the automated implementation target; check 20 remains live learner/environment acceptance. A 19/20 result means 95% checklist coverage, not 95% of the eventual platform or production readiness. Require a successful CI run for the exact release commit before counting check 17.
+
+Validation for implementation commit `053dded`: `pnpm check` passed (77 tests, five architecture checks, formatting, types and three build dry runs); public journeys passed 25/25, compiled runner journeys 5/5, account journeys 10/10 and preview journeys 2/2. The first concurrent account run hit a 45-second notes-journey timeout; the full isolated rerun passed without changing assertions or timeouts. [GitHub CI evidence for this implementation commit](https://github.com/lilbovio/Learntify/actions/runs/40558668730) supplies the separate remote result. The Spanish mobile study-plan screenshot was also inspected for layout and readable download controls.
 
 ## Delivery stage
 
-Current stage: functional alpha for restricted testing, not a production release candidate. The complete account → lesson → execute → save attempt → review flow is implemented. Nine bilingual introductory lessons cover values, variables, strings, comparisons, conditionals, loops, functions, arrays and objects. This remains a small beginning of the intended curriculum.
+Implementation commit `053dded` passed GitHub CI on October 27, 2026. Checks 1–19 are accepted: **19/20 (95%) of the first-release alpha checklist**. Check 20 remains open; live HTTPS/provider/restore validation and an invited learner pilot are required before release. Subsequent code changes must pass their own checks before inheriting this status.
+
+Current stage: functional alpha for restricted testing, not a production release candidate. The complete account → lesson → execute → save attempt → review flow is implemented. Eleven bilingual lessons plus a guided basket-calculator project cover values, variables, strings, comparisons, conditionals, loops, functions, arrays and objects, followed by applied basket-total and study-summary exercises. This remains a small beginning of the intended curriculum.
 
 The next milestone is a private beta: add applied foundation projects and deeper practice; improve feedback and accessibility; expand offline recovery and history access beyond the latest 20 attempts; and validate the experience with learners. Production readiness additionally needs tested backup/restore and deletion replay, monitoring and incident procedures, global capacity controls, deployed environment verification and production email/domain configuration. Community launch still requires moderators. Projects, data structures, algorithms and interview preparation remain substantial product work.
 
@@ -46,7 +74,7 @@ Remaining screens include advanced assessment, projects, community/moderation an
 
 Signed-in code now uses the existing draft sync engine with separate `code:<lessonId>` storage keys; existing note keys remain unchanged. New code drafts start with the lesson example, and intentionally empty saved code stays empty. Saves debounce for 1.2 seconds, serialize requests, preserve retry IDs and expose conflicts without silently overwriting another device. Account changes hide private code/history; guest storage is not used for account code. Code or note changes warn before leaving or signing out. Recent attempts shows the latest 20 current-version snapshots and restores one only after confirmation. No new database migration is required. Offline durability and automatic guest-to-account import remain future work.
 
-All nine bilingual lessons include a code editor, expected output, Run/Stop/Reset controls and immediate output feedback. A dedicated Worker runs a fresh QuickJS WebAssembly context with execution, stack, memory and output limits. Browser globals are unavailable to learner code. Guest code drafts persist in browser storage; signed-in drafts and explicit attempt snapshots save separately to D1. This is output practice, not verified mastery. Development and compiled-production browser journeys cover isolation, runaway loops, syntax errors, output limits and recovery. See [code exercise boundaries](CODE_EXERCISES.md).
+All eleven bilingual lessons and the project include a code editor, expected output, Run/Stop/Reset controls and immediate output feedback. A dedicated Worker runs a fresh QuickJS WebAssembly context with execution, stack, memory and output limits. Browser globals are unavailable to learner code. Guest code drafts persist in browser storage; signed-in drafts and explicit attempt snapshots save separately to D1. This is output practice, not verified mastery. Development and compiled-production browser journeys cover isolation, runaway loops, syntax errors, output limits and recovery. See [code exercise boundaries](CODE_EXERCISES.md).
 
 Practice saves validate session ownership, origin, expected account, current lesson version and bounded input. Idempotent IDs prevent duplicate attempts after lost acknowledgements; a rolling 100-save daily cap limits writes per account. Today shows current-version practice counts and review reminders (immediate after mismatch, 24 hours after a match), with client-reported provenance. Migration 0006 is applied to local test storage and the dedicated external-test D1 database. D1/API/browser tests cover isolation, quota races, retries, deletion cascades, language switching and due-queue updates. See [practice progress](PRACTICE_PROGRESS.md).
 
@@ -79,3 +107,11 @@ Passkey enrollment, sign-in and removal are implemented with Better Auth 1.7.12.
 Optional server-only credentials enable provider buttons. Accounts must first sign in by email/passkey, then explicitly link the same verified email from settings within 15 minutes. Implicit linking and OAuth signup remain disabled. Requests cannot override scopes, redirects, ID tokens or signup policy. Access/refresh tokens are encrypted at rest. Tests simulate provider responses. Credentials are configured locally and Google linking was confirmed by the owner; live GitHub verification remains pending. See [OAuth local testing](OAUTH_LOCAL_TESTING.md).
 
 Provider connection UX now confirms identity in place using a passkey when the backend requires recent authentication, then retries once. Switching accounts stops automatic linking. Email confirmation can return to settings without logout. Connected providers have explicit disabled states; there is no user-facing linking countdown. The backend freshness policy is preserved.
+
+## Deployment decision
+
+The domain has been purchased. Deployment remains deferred at the owner’s request while alpha implementation continues. CI is configured; CD is not enabled. See [release pipeline](RELEASE_PIPELINE.md) for the staging boundary and activation prerequisites.
+
+## Guided project increment
+
+The Projects entry now opens a bilingual basket calculator with requirements, instructional milestones, seven function checks and interview self-review prompts. Existing code drafts, attempts and private notes persist project work. See [guided projects](GUIDED_PROJECTS.md) for boundaries and validation. The walkthrough is self-review; it is not the full planned interview studio.

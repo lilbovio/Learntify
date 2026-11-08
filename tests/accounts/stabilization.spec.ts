@@ -1,0 +1,111 @@
+import { expect, test } from '@playwright/test';
+import { readLocalSignInLink } from '../../tooling/local/mailbox.mjs';
+
+test('learning journey protects plan edits and recovers from failed and expired saves', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  const email = `stability-${crypto.randomUUID()}@example.test`;
+  await page.goto('/en/auth');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('I confirm I am 18 or older.').check();
+  await page.getByRole('button', { name: 'Send sign-in link' }).click();
+  await expect(page.getByText('Link requested.', { exact: false })).toBeVisible();
+  await page.goto(await readLocalSignInLink(email));
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeFocused();
+  await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 503 }), { times: 1 });
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not sign out');
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeFocused();
+  await page.goto('/en/learn/lessons/values-and-expressions');
+  await page.getByLabel('Your JavaScript', { exact: true }).fill('console.log(7);');
+  await page.getByRole('button', { name: 'Run code', exact: true }).click();
+  await page.getByRole('button', { name: 'Save practice attempt' }).click();
+  await expect(page.getByText('Attempt saved to your account.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Code saved to your account.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('textbox', { name: 'Your lesson notes', exact: true })
+    .fill('I can explain why the expression returns seven.');
+  await expect(page.getByText('Notes saved to your account.', { exact: true })).toBeVisible();
+  const notesDownload = page.waitForEvent('download');
+  await page.locator('.lesson-notes').getByRole('button', { name: 'Download a copy' }).click();
+  const notes = await notesDownload;
+  const noteChunks = [];
+  for await (const chunk of await notes.createReadStream()) noteChunks.push(chunk);
+  expect(Buffer.concat(noteChunks).toString()).toBe(
+    'I can explain why the expression returns seven.',
+  );
+  await page.getByRole('link', { name: 'View progress and review' }).click();
+  await expect(page.locator('.practice-overview')).toContainText('Saved attempts: 1');
+  await page.getByRole('link', { name: 'Study plans', exact: true }).click();
+  await page.getByLabel('Title', { exact: true }).fill('Keep my work');
+  await page.getByLabel('Slug', { exact: true }).fill('keep-my-work');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'New plan', exact: true }).click();
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep my work');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('link', { name: 'Learn', exact: true }).click();
+  await expect(page).toHaveURL(/study-plans$/);
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep my work');
+  await page.route(
+    '**/api/v1/study-plans',
+    (route) => route.fulfill({ status: 401, json: { error: { code: 'UNAUTHENTICATED' } } }),
+    { times: 1 },
+  );
+  await page.getByRole('button', { name: 'Create plan', exact: true }).click();
+  const recovery = page.getByRole('link', { name: 'Sign in in another tab' });
+  await expect(recovery).toHaveAttribute('target', '_blank');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep my work');
+  await page.route(
+    '**/api/v1/study-plans',
+    (route) =>
+      route.fulfill({
+        status: 429,
+        json: {
+          error: { code: 'WRITE_LIMIT', message: 'Daily save capacity reached.' },
+          meta: { requestId: 'test-capacity' },
+        },
+      }),
+    { times: 1 },
+  );
+  await page.getByRole('button', { name: 'Create plan', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Saving is temporarily limited.');
+  const planDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download a copy', exact: true }).click();
+  const downloadedPlan = await planDownload;
+  const planChunks = [];
+  for await (const chunk of await downloadedPlan.createReadStream()) planChunks.push(chunk);
+  expect(JSON.parse(Buffer.concat(planChunks).toString())).toMatchObject({
+    title: 'Keep my work',
+    slug: 'keep-my-work',
+  });
+  await page.getByRole('button', { name: 'Create plan', exact: true }).click();
+  await expect(page.getByText('Plan saved.', { exact: true })).toBeVisible();
+  await expect(recovery).toHaveCount(0);
+  await page.getByLabel('Title', { exact: true }).fill('Retry this edit');
+  await page.route('**/api/v1/study-plans/*', async (route) => {
+    if (route.request().method() === 'PUT') await route.abort();
+    else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Try again');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Retry this edit');
+  await page.unroute('**/api/v1/study-plans/*');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText('Plan saved.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Español', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Planes de estudio', exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Retry this edit', exact: true }).click();
+  await expect(page.getByLabel('Título', { exact: true })).toHaveValue('Retry this edit');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('stabilized-mobile.png'), fullPage: true });
+});

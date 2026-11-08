@@ -96,5 +96,9 @@ describe('draft persistence in the local Workers/D1 runtime', () => {
       kind: 'operation-conflict',
     });
     expect((await repository.get('draft-1', 'alice'))?.revision).toBe(2);
+    const db = await runtime.getD1Database('DB');
+    await db.prepare('DELETE FROM draft_operations').run();
+    expect(await repository.save(input)).toEqual({ kind: 'conflict', revision: 2 });
+    expect((await repository.get('draft-1', 'alice'))?.content).toBe('saved');
   });
 });
