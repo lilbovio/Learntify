@@ -12,6 +12,16 @@ test('learning journey protects plan edits and recovers from failed and expired 
   await page.getByRole('button', { name: 'Send sign-in link' }).click();
   await expect(page.getByText('Link requested.', { exact: false })).toBeVisible();
   await page.goto(await readLocalSignInLink(email));
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeFocused();
+  await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 503 }), { times: 1 });
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not sign out');
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeFocused();
   await page.goto('/en/learn/lessons/values-and-expressions');
   await page.getByLabel('Your JavaScript', { exact: true }).fill('console.log(7);');
   await page.getByRole('button', { name: 'Run code', exact: true }).click();
@@ -42,7 +52,8 @@ test('learning journey protects plan edits and recovers from failed and expired 
   await page.getByRole('link', { name: 'Learn', exact: true }).click();
   await expect(page).toHaveURL(/study-plans$/);
   page.once('dialog', (dialog) => dialog.dismiss());
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep my work');
   await page.route(
     '**/api/v1/study-plans',

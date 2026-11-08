@@ -31,37 +31,52 @@ export function NotebookPage({ locale }: { locale: Locale }) {
   }, [locale, reload]);
   const lesson = lessons?.find((item) => item.id === selected);
   return (
-    <PageFrame locale={locale} title={en ? 'Your learning notebook' : 'Tu cuaderno de aprendizaje'}>
-      <p className="lede">
-        {en
+    <PageFrame
+      locale={locale}
+      eyebrow={en ? 'Notebook' : 'Cuaderno'}
+      title={en ? 'Your learning notebook' : 'Tu cuaderno de aprendizaje'}
+      lede={
+        en
           ? 'Keep explanations in your own words. These are the same private notes you write inside each lesson.'
-          : 'Guarda explicaciones con tus propias palabras. Son las mismas notas privadas que escribes en cada lección.'}
-      </p>
+          : 'Guarda explicaciones con tus propias palabras. Son las mismas notas privadas que escribes en cada lección.'
+      }
+    >
       <AccountPanel locale={locale} onAccountChange={setAccount} unsavedNotes={dirty} />
       {account === undefined ? (
         <p role="status">{en ? 'Opening your notebook…' : 'Abriendo tu cuaderno…'}</p>
       ) : !account ? (
         <section className="clay-card empty-state">
+          <span className="stage-label">{en ? 'Private notes' : 'Notas privadas'}</span>
           <h2>{en ? 'A place for your own words.' : 'Un lugar para tus propias palabras.'}</h2>
           <p>
             {en
               ? 'Sign in to keep private lesson notes and resume them on another device.'
               : 'Inicia sesión para guardar notas privadas y retomarlas en otro dispositivo.'}
           </p>
-          <a href={lessonPath(locale)}>{en ? 'Explore a lesson' : 'Explorar una lección'} →</a>
+          <div className="page-actions">
+            <a className="primary-link" href={'/' + locale + '/auth'}>
+              {en ? 'Sign in to write notes' : 'Iniciar sesión para escribir notas'}
+            </a>
+            <a className="text-link" href={lessonPath(locale)}>
+              {en ? 'Explore a lesson' : 'Explorar una lección'} →
+            </a>
+          </div>
         </section>
       ) : failed ? (
-        <div role="alert">
+        <div role="alert" className="callout callout-error">
           <p>{en ? 'Could not load your lessons.' : 'No se pudieron cargar tus lecciones.'}</p>
           <button onClick={() => setReload((n) => n + 1)}>
             {en ? 'Try again' : 'Intentar de nuevo'}
           </button>
         </div>
       ) : !lessons ? (
-        <p role="status">{en ? 'Loading lessons…' : 'Cargando lecciones…'}</p>
+        <div className="skeleton-panel" role="status">
+          <p>{en ? 'Loading lessons…' : 'Cargando lecciones…'}</p>
+        </div>
       ) : (
         <div className="notebook-layout">
-          <aside>
+          <aside className="notebook-index">
+            <p className="eyebrow">{en ? 'Open notes' : 'Abrir notas'}</p>
             <label className="lesson-search">
               {en ? 'Choose a lesson' : 'Elige una lección'}
               <select
@@ -85,11 +100,18 @@ export function NotebookPage({ locale }: { locale: Locale }) {
                 : 'Las notas se sincronizan automáticamente. Si otro dispositivo cambia una nota, tú eliges qué versión conservar.'}
             </p>
           </aside>
-          <section className="clay-card notebook-paper">
+          <section className="notebook-paper" aria-live="polite">
             {lesson ? (
               <>
-                <h2>{lesson.title}</h2>
-                <a href={lessonPath(locale, lesson.id)}>{en ? 'Open lesson' : 'Abrir lección'} →</a>
+                <header className="notebook-paper-head">
+                  <div>
+                    <p className="eyebrow">{en ? 'Lesson notes' : 'Notas de la lección'}</p>
+                    <h2>{lesson.title}</h2>
+                  </div>
+                  <a className="text-link" href={lessonPath(locale, lesson.id)}>
+                    {en ? 'Open lesson' : 'Abrir lección'} →
+                  </a>
+                </header>
                 <LessonNotes
                   key={`${account}:${lesson.id}:${lesson.version}`}
                   lessonId={lesson.id}

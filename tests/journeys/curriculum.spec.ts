@@ -95,6 +95,7 @@ test('Spanish foundations remain readable on mobile and preserve lesson navigati
     true,
   );
   await page.screenshot({ path: testInfo.outputPath('lesson-mobile.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Menú', exact: true }).click();
   await page.getByRole('link', { name: 'Hoy', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Paso 5 Tomar decisiones' })).toBeVisible();
 });

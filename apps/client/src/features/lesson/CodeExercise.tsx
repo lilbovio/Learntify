@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Lesson, Locale } from '@learntify/api-contracts';
 import { SaveAttempt } from './SaveAttempt';
 import { useCodeDraft } from '../draft/useCodeDraft';
@@ -68,7 +69,16 @@ export function CodeExercise({
     checks?: Array<{ passed: boolean; actual: string }>;
   };
   const [result, setResult] = useState<RunResult>();
+  const reduced = useReducedMotion();
+  const resultRef = useRef<HTMLDivElement>(null);
   const active = useRef<{ worker: Worker; timer: ReturnType<typeof setTimeout> } | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    const node = resultRef.current;
+    if (!node) return;
+    node.focus({ preventScroll: true });
+    node.scrollIntoView({ block: 'nearest' });
+  }, [result]);
   function dispose() {
     if (active.current) {
       active.current.worker.terminate();
@@ -121,63 +131,141 @@ export function CodeExercise({
       : JSON.stringify(result.output) === JSON.stringify(lesson.coding.expectedOutput));
   return (
     <section className="code-exercise" aria-labelledby="code-title">
-      <h3 id="code-title">{text.title}</h3>
-      <p>{lesson.coding.prompt}</p>
-      <label htmlFor="code-editor">{text.editor}</label>
-      <textarea
-        id="code-editor"
-        className="code-editor"
-        value={code}
-        maxLength={16000}
-        spellCheck={false}
-        autoCapitalize="off"
-        autoCorrect="off"
-        disabled={running || !editable}
-        onChange={(event) => change(event.target.value)}
-      />
-      <div className="practice-actions">
-        <button type="button" disabled={running || !editable} onClick={run}>
-          {text.run}
-        </button>
-        {running && (
-          <button
-            type="button"
-            onClick={() => {
-              dispose();
-              setRunning(false);
-              setResult({ output: [], error: text.stopped });
-            }}
-          >
-            {text.stop}
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={running || !editable}
-          onClick={() => change(lesson.example)}
+      <header className="code-heading">
+        <div>
+          <p className="eyebrow">
+            <span className="stage-kicker-number" aria-hidden="true">
+              02 ·{' '}
+            </span>
+            {locale === 'en' ? 'Run' : 'Ejecuta'}
+          </p>
+          <h3 id="code-title">{text.title}</h3>
+        </div>
+        <p className="code-prompt">{lesson.coding.prompt}</p>
+      </header>
+      <div className="code-workbench">
+        <div className="code-editor-pane">
+          <div className="editor-toolbar">
+            <label htmlFor="code-editor">{text.editor}</label>
+            <span>JavaScript</span>
+          </div>
+          <textarea
+            id="code-editor"
+            className="code-editor"
+            value={code}
+            maxLength={16000}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            wrap="off"
+            rows={12}
+            disabled={running || !editable}
+            onChange={(event) => change(event.target.value)}
+          />
+          <div className="practice-actions code-actions">
+            <button className="run-key" type="button" disabled={running || !editable} onClick={run}>
+              {text.run}
+            </button>
+            {running && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  dispose();
+                  setRunning(false);
+                  setResult({ output: [], error: text.stopped });
+                }}
+              >
+                {text.stop}
+              </button>
+            )}
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={running || !editable}
+              onClick={() => change(lesson.example)}
+            >
+              {text.reset}
+            </button>
+          </div>
+          <DownloadWork
+            content={code}
+            filename={`${lesson.id}.js`}
+            locale={locale}
+            disabled={!draft.ready}
+          />
+          {accountId ? (
+            <CodeDraftStatus
+              state={draft.state}
+              locale={locale}
+              retry={draft.retry}
+              resolve={draft.resolve}
+            />
+          ) : (
+            draft.localSaved !== undefined && (
+              <small>{draft.localSaved ? text.saved : text.unsaved}</small>
+            )
+          )}
+        </div>
+        <div
+          className="code-output-pane"
+          aria-label={locale === 'en' ? 'Code output' : 'Salida del código'}
         >
-          {text.reset}
-        </button>
+          <div className="output-heading">
+            <h4>{text.output}</h4>
+            {passed && (
+              <span className="success-label">
+                <span aria-hidden="true">✓</span> {locale === 'en' ? 'Output matches' : 'Coincide'}
+              </span>
+            )}
+          </div>
+          {result ? (
+            <motion.div
+              ref={resultRef}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: reduced ? 0 : 0.12 }}
+              className={
+                'run-result' +
+                (result.error ? ' run-result-error' : passed ? ' run-result-success' : '')
+              }
+              role="status"
+              tabIndex={-1}
+            >
+              <pre className="run-output">{result.output.join('\n') || '—'}</pre>
+              <p className={result.error ? 'error-text' : undefined}>
+                {result.error ||
+                  (lesson.coding.checks
+                    ? passed
+                      ? locale === 'en'
+                        ? 'All project checks passed. Review and explain your solution.'
+                        : 'Todas las pruebas pasaron. Revisa y explica tu solución.'
+                      : locale === 'en'
+                        ? 'Review the failing checks and try again.'
+                        : 'Revisa las pruebas que fallan e inténtalo de nuevo.'
+                    : passed
+                      ? text.pass
+                      : text.retry)}
+              </p>
+            </motion.div>
+          ) : (
+            <div className="output-empty">
+              <p>
+                {locale === 'en'
+                  ? 'Run your code to see what it prints.'
+                  : 'Ejecuta tu código para ver lo que imprime.'}
+              </p>
+              {!lesson.coding.checks && (
+                <>
+                  <h4>{text.expected}</h4>
+                  <pre>{lesson.coding.expectedOutput.join('\n')}</pre>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-      <DownloadWork
-        content={code}
-        filename={`${lesson.id}.js`}
-        locale={locale}
-        disabled={!draft.ready}
-      />
-      {accountId ? (
-        <CodeDraftStatus
-          state={draft.state}
-          locale={locale}
-          retry={draft.retry}
-          resolve={draft.resolve}
-        />
-      ) : (
-        draft.localSaved !== undefined && (
-          <small>{draft.localSaved ? text.saved : text.unsaved}</small>
-        )
-      )}
-      {lesson.coding.checks ? (
+      {lesson.coding.checks && (
         <section
           className="project-checks"
           aria-label={locale === 'en' ? 'Project checks' : 'Pruebas del proyecto'}
@@ -212,31 +300,6 @@ export function CodeExercise({
             ))}
           </ul>
         </section>
-      ) : (
-        <>
-          <h4>{text.expected}</h4>
-          <pre>{lesson.coding.expectedOutput.join('\n')}</pre>
-        </>
-      )}
-      {result && (
-        <div role="status">
-          <h4>{text.output}</h4>
-          <pre>{result.output.join('\n') || '—'}</pre>
-          <p>
-            {result.error ||
-              (lesson.coding.checks
-                ? passed
-                  ? locale === 'en'
-                    ? 'All project checks passed. Review and explain your solution.'
-                    : 'Todas las pruebas pasaron. Revisa y explica tu solución.'
-                  : locale === 'en'
-                    ? 'Review the failing checks and try again.'
-                    : 'Revisa las pruebas que fallan e inténtalo de nuevo.'
-                : passed
-                  ? text.pass
-                  : text.retry)}
-          </p>
-        </div>
       )}
       <p className="practice-note">
         {lesson.coding.checks

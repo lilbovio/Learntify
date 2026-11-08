@@ -11,3 +11,6 @@ test.ts
 
 # Original design reference; application code is formatted separately.
 ai-studio-desing/
+
+# Design-lead source boards and handoff; reviewed in place by Antigravity.
+design/learntify-ui/

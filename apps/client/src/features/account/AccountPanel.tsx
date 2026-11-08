@@ -4,6 +4,8 @@ import type { Locale } from '@learntify/api-contracts';
 import { accountCopy } from './copy';
 import { SocialButtons } from './SocialButtons';
 import { passkeyAuth, supportsPasskeys } from './passkeys';
+import { notifySessionChange, sessionEvent } from '../../shared/session-events';
+import { setUnsavedWork } from '../../shared/unsaved-work';
 
 const api = createApiClient();
 export function AccountPanel({
@@ -40,6 +42,15 @@ export function AccountPanel({
     window.history.replaceState(null, '', url);
   }, []);
   useEffect(() => {
+    const refreshAccount = () => setRefresh((value) => value + 1);
+    window.addEventListener(sessionEvent, refreshAccount);
+    return () => window.removeEventListener(sessionEvent, refreshAccount);
+  }, []);
+  useEffect(() => {
+    setUnsavedWork(unsavedNotes);
+    return () => setUnsavedWork(false);
+  }, [unsavedNotes]);
+  useEffect(() => {
     const controller = new AbortController();
     setState('loading');
     void (async () => {
@@ -66,12 +77,7 @@ export function AccountPanel({
   }, [refresh, onAccountChange, reauthenticate]);
   if (state === 'loading') return standalone ? <p role="status">{text.loading}</p> : null;
   if (state === 'disabled') return standalone ? <p role="status">{text.unavailable}</p> : null;
-  if (state === 'guest' && !standalone)
-    return (
-      <p className="account-entry">
-        <a href={'/' + locale + '/auth'}>{text.signIn}</a>
-      </p>
-    );
+  if (state === 'guest' && !standalone) return null;
   return (
     <section
       className={
@@ -99,32 +105,36 @@ export function AccountPanel({
               <a href={'/' + locale + '/today'}>{text.continue}</a>
             </p>
           )}
-          <button
-            disabled={busy}
-            onClick={async () => {
-              if (unsavedNotes && !window.confirm(text.leaveUnsaved)) return;
-              setBusy(true);
-              setFailed(false);
-              try {
-                await api.signOut();
-                onAccountChange(null);
-                setState('guest');
-                setEmail('');
-                setAdultConfirmed(false);
-                setSent(false);
-                setInvalidLink(false);
-              } catch {
-                setFailed(true);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {text.signOut}
-          </button>
+          {standalone && (
+            <button
+              disabled={busy}
+              onClick={async () => {
+                if (unsavedNotes && !window.confirm(text.leaveUnsaved)) return;
+                setBusy(true);
+                setFailed(false);
+                try {
+                  await api.signOut();
+                  onAccountChange(null);
+                  setState('guest');
+                  setEmail('');
+                  setAdultConfirmed(false);
+                  setSent(false);
+                  setInvalidLink(false);
+                  notifySessionChange();
+                } catch {
+                  setFailed(true);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {text.signOut}
+            </button>
+          )}
         </div>
       ) : (
         <form
+          className="account-form"
           onSubmit={async (event) => {
             event.preventDefault();
             setBusy(true);
@@ -142,16 +152,16 @@ export function AccountPanel({
           }}
         >
           {sent ? (
-            <>
+            <section className="auth-method check-inbox">
               <h3>{text.checkEmail}</h3>
               <p role="status">{text.sent}</p>
               <button type="button" onClick={() => setSent(false)}>
                 {text.differentEmail}
               </button>
-            </>
+            </section>
           ) : (
             <>
-              <p>
+              <p className="auth-intro">
                 {reauthenticate
                   ? locale === 'en'
                     ? 'Confirm your identity by email. The link brings you back to account settings; you do not need to sign out.'
@@ -160,53 +170,74 @@ export function AccountPanel({
               </p>
               {!reauthenticate && <SocialButtons locale={locale} />}
               {!reauthenticate && supportsPasskeys() && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    setFailed(false);
-                    try {
-                      const result = await passkeyAuth.signIn.passkey();
-                      if (result.error) throw new Error('Passkey sign-in failed');
-                      window.location.assign('/' + locale + '/today');
-                    } catch {
-                      setFailed(true);
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  {locale === 'en' ? 'Sign in with a passkey' : 'Entrar con una clave de acceso'}
-                </button>
+                <section className="auth-method" aria-labelledby="passkey-signin-title">
+                  <div className="auth-method-heading">
+                    <span className="auth-step">02</span>
+                    <h3 id="passkey-signin-title">
+                      {locale === 'en' ? 'Use a passkey' : 'Usa una clave de acceso'}
+                    </h3>
+                  </div>
+                  <p>
+                    {locale === 'en'
+                      ? 'Sign in with your device’s fingerprint, face unlock, or PIN.'
+                      : 'Entra con tu huella, reconocimiento facial o PIN del dispositivo.'}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      setFailed(false);
+                      try {
+                        const result = await passkeyAuth.signIn.passkey();
+                        if (result.error) throw new Error('Passkey sign-in failed');
+                        window.location.assign('/' + locale + '/today');
+                      } catch {
+                        setFailed(true);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {locale === 'en' ? 'Sign in with a passkey' : 'Entrar con una clave de acceso'}
+                  </button>
+                </section>
               )}
-              <label htmlFor="account-email">{text.email}</label>
-              <input
-                id="account-email"
-                type="email"
-                autoComplete="email"
-                required
-                maxLength={254}
-                value={email}
-                disabled={busy}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setSent(false);
-                }}
-              />
-              <label className="adult-confirmation">
+              <section className="auth-method" aria-labelledby="email-signin-title">
+                <div className="auth-method-heading">
+                  <span className="auth-step">{reauthenticate ? '01' : '03'}</span>
+                  <h3 id="email-signin-title">
+                    {locale === 'en' ? 'Email sign-in link' : 'Enlace de acceso por correo'}
+                  </h3>
+                </div>
+                <label htmlFor="account-email">{text.email}</label>
                 <input
-                  type="checkbox"
+                  id="account-email"
+                  type="email"
+                  autoComplete="email"
                   required
-                  checked={adultConfirmed}
+                  maxLength={254}
+                  value={email}
                   disabled={busy}
-                  onChange={(event) => setAdultConfirmed(event.target.checked)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setSent(false);
+                  }}
                 />
-                {text.adult}
-              </label>
-              <button disabled={busy || !adultConfirmed || sent} type="submit">
-                {busy ? text.sending : text.send}
-              </button>
+                <label className="adult-confirmation">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={adultConfirmed}
+                    disabled={busy}
+                    onChange={(event) => setAdultConfirmed(event.target.checked)}
+                  />
+                  {text.adult}
+                </label>
+                <button disabled={busy || !adultConfirmed || sent} type="submit">
+                  {busy ? text.sending : text.send}
+                </button>
+              </section>
             </>
           )}
           {invalidLink && <p role="alert">{text.invalidLink}</p>}

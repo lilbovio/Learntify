@@ -89,7 +89,9 @@ export function PracticeOverview({
               : text.error}
           </p>
           {expired && (
-            <a href={`/${locale}/auth`}>{locale === 'en' ? 'Sign in' : 'Iniciar sesión'}</a>
+            <a href={`/${locale}/auth`}>
+              {locale === 'en' ? 'Sign in again' : 'Inicia sesión de nuevo'}
+            </a>
           )}
           <button onClick={() => setReload((n) => n + 1)}>{text.retry}</button>
         </div>

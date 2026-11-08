@@ -100,7 +100,8 @@ test('practice survives reloads, retries once after a lost acknowledgement, and 
     await expect(other.getByLabel('Your JavaScript', { exact: true })).toHaveValue(
       'console.log(42);',
     );
-    await other.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await other.getByRole('button', { name: 'Account menu', exact: true }).click();
+    await other.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
     await expect(other.getByText('Recent attempts', { exact: true })).toHaveCount(0);
     await expect(other.getByLabel('Your JavaScript', { exact: true })).toHaveValue(
       'console.log(3 + 2);',

@@ -27,12 +27,15 @@ test('Spanish mobile hubs have honest guest states and no overflow', async ({ pa
   await expect(
     page.getByText('No hay lecciones con esa búsqueda. Prueba otra palabra.'),
   ).toBeVisible();
+  await page.getByRole('button', { name: 'Menú', exact: true }).click();
   await page.getByRole('link', { name: 'Practicar', exact: true }).click();
   await expect(page.getByText('Aquí va tu práctica.')).toBeVisible();
+  await page.getByRole('button', { name: 'Menú', exact: true }).click();
   await page.getByRole('link', { name: 'Progreso', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Mira cuánto has avanzado.' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('progress-mobile.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Menú', exact: true }).click();
   await page.getByRole('link', { name: 'Cuaderno', exact: true }).click();
   await expect(page.getByText('Un lugar para tus propias palabras.')).toBeVisible();
   await expect(page.getByRole('textbox')).toHaveCount(0);

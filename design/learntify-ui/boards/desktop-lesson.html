@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desktop Lesson · Learntify Design Board</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-canvas);
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 1rem;
+      background: var(--color-action-primary-fill);
+      color: var(--color-action-primary-label);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-control);
+      font-weight: 600;
+      z-index: 100;
+      text-decoration: none;
+      transition: top var(--duration-interactive);
+    }
+    .skip-link:focus {
+      top: 1rem;
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    /* Top Sticky Header */
+    .app-header-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background-color: var(--color-canvas);
+      border-bottom: 1px solid var(--color-divider);
+    }
+    @supports (backdrop-filter: blur(12px)) {
+      .app-header-wrap {
+        background-color: var(--color-surface-translucent);
+        backdrop-filter: blur(12px);
+      }
+    }
+
+    .app-header {
+      max-width: var(--width-shell);
+      margin: 0 auto;
+      height: var(--height-topbar);
+      padding: 0 var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .brand {
+      color: var(--color-text-primary);
+      text-decoration: none;
+      font-size: var(--text-xl);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      display: inline-flex;
+      align-items: baseline;
+    }
+    .brand-dot {
+      color: var(--color-text-tertiary);
+    }
+
+    .brand-rule {
+      width: 1px;
+      height: 18px;
+      background-color: var(--color-divider);
+      margin: 0 var(--space-2);
+    }
+
+    .brand-context {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    /* Desktop Navigation */
+    .nav-desktop {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-left: var(--space-6);
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .nav-divider {
+      width: 1px;
+      height: 16px;
+      background-color: var(--color-divider);
+      margin: 0 var(--space-2);
+    }
+
+    .nav-link {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-control);
+      transition: color var(--duration-interactive), background-color var(--duration-interactive);
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--color-text-primary);
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-link[aria-current="page"] {
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    .nav-link[aria-current="page"]::after {
+      content: '';
+      position: absolute;
+      bottom: -18px;
+      left: var(--space-3);
+      right: var(--space-3);
+      height: 2px;
+      background-color: var(--color-text-primary);
+      border-radius: 1px;
+    }
+
+    .nav-link:focus-visible,
+    button:focus-visible,
+    a:focus-visible,
+    textarea:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    .header-tools {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .language-toggle {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-control);
+      border: 1px solid var(--color-divider);
+      background: transparent;
+      transition: border-color var(--duration-interactive), color var(--duration-interactive);
+    }
+    .language-toggle:hover {
+      color: var(--color-text-primary);
+      border-color: var(--color-outline-interactive);
+    }
+
+    .account-button {
+      background: transparent;
+      border: 1px solid var(--color-divider);
+      color: var(--color-text-primary);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: border-color var(--duration-interactive);
+    }
+    .account-button:hover {
+      border-color: var(--color-outline-interactive);
+    }
+
+    /* Main Container */
+    .shell {
+      max-width: var(--width-lesson-main);
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+      flex: 1;
+      width: 100%;
+    }
+
+    .lesson-meta-top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .eyebrow {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
+
+    .badge-scope {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      background-color: var(--color-surface-raised);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-control);
+      border: 1px solid var(--color-divider);
+    }
+
+    /* Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: var(--space-8);
+      align-items: start;
+    }
+
+    /* Sidebar Curriculum Path */
+    .curriculum-sidebar {
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      padding: var(--space-4);
+      position: sticky;
+      top: calc(var(--height-topbar) + var(--space-6));
+    }
+
+    .curriculum-sidebar .eyebrow {
+      margin-bottom: var(--space-3);
+      display: block;
+    }
+
+    .lesson-path-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .lesson-step-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-control);
+      text-decoration: none;
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm);
+      transition: background-color var(--duration-interactive), color var(--duration-interactive);
+    }
+
+    .lesson-step-item:hover {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+    }
+
+    .lesson-step-item[aria-current="step"] {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-primary);
+      font-weight: 600;
+      border: 1px solid var(--color-divider);
+    }
+
+    .step-number {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+    .lesson-step-item[aria-current="step"] .step-number {
+      color: var(--color-text-primary);
+    }
+
+    .sidebar-footer {
+      margin-top: var(--space-5);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--color-divider);
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* Lesson Workspace Core */
+    .lesson-container {
+      position: relative;
+    }
+
+    .lesson-layout-with-margin {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: var(--space-6);
+    }
+
+    /* Recognizable Signature Margin */
+    .editorial-margin {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-12);
+      padding-top: var(--space-8);
+      user-select: none;
+    }
+
+    .margin-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--space-1);
+      position: relative;
+    }
+
+    .margin-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      text-align: right;
+    }
+
+    .margin-line {
+      width: 24px;
+      height: 1px;
+      background-color: var(--color-divider);
+    }
+
+    .margin-marker.active .margin-tag {
+      color: var(--color-text-primary);
+    }
+    .margin-marker.active .margin-line {
+      width: 36px;
+      background-color: var(--color-outline-interactive);
+    }
+
+    /* Lesson Card */
+    .lesson-card {
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      padding: var(--space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+
+    .lesson-heading h1 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: var(--space-2);
+    }
+
+    .lesson-heading .objective {
+      font-size: var(--text-base);
+      color: var(--color-text-secondary);
+    }
+
+    /* Prose Section */
+    .prose-section {
+      max-width: var(--measure-prose);
+      font-size: var(--text-lesson);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-primary);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .prose-section code {
+      font-family: var(--font-mono);
+      font-size: 14.5px;
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--color-text-primary);
+    }
+
+    /* Predict Exercise Form */
+    .predict-box {
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .predict-box legend {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .choices-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .choice-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background-color: var(--color-surface-reading);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      transition: border-color var(--duration-interactive), background-color var(--duration-interactive);
+    }
+
+    .choice-label:hover {
+      border-color: var(--color-outline-interactive);
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .choice-label.selected {
+      border-color: var(--color-text-primary);
+      background-color: rgba(243, 241, 235, 0.04);
+    }
+
+    .choice-label input[type="radio"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--color-outline-interactive);
+      border-radius: 50%;
+      background: transparent;
+      outline: none;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .choice-label input[type="radio"]:checked {
+      border-color: var(--color-text-primary);
+    }
+
+    .choice-label input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-text-primary);
+    }
+
+    .choice-text {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+    }
+
+    .predict-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-top: var(--space-2);
+    }
+
+    /* Feedback Callout */
+    .prediction-feedback {
+      background-color: rgba(163, 230, 195, 0.06);
+      border: 1px solid var(--color-status-success);
+      border-radius: var(--radius-control);
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      font-size: var(--text-sm);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-primary);
+    }
+
+    .feedback-icon {
+      color: var(--color-status-success);
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    /* Code Workbench */
+    .code-workbench {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-top: var(--space-2);
+    }
+
+    .workbench-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      align-items: stretch;
+    }
+
+    .editor-pane, .output-pane {
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      background-color: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--color-divider);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.04em;
+    }
+
+    .editor-area {
+      padding: var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 14.5px;
+      line-height: var(--line-height-code);
+      background: transparent;
+      border: none;
+      color: var(--color-text-primary);
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+      tab-size: 2;
+    }
+
+    .editor-area:focus {
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    .workbench-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background-color: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--color-divider);
+    }
+
+    /* The Ivory Primary Run Key with Clay Depth */
+    .run-key {
+      background-color: var(--color-action-primary-fill);
+      color: var(--color-action-primary-label);
+      border: none;
+      border-radius: var(--radius-control);
+      padding: 8px 18px;
+      font-size: var(--text-sm);
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      /* 2px lower edge clay depth */
+      box-shadow: 0 2px 0 var(--color-action-primary-edge);
+      transform: translateY(0);
+      transition: transform var(--duration-interactive), box-shadow var(--duration-interactive), filter var(--duration-interactive);
+    }
+
+    .run-key:hover {
+      filter: brightness(0.96);
+    }
+
+    .run-key:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .run-key:focus-visible {
+      outline: var(--focus-width) solid var(--color-focus-ring);
+      outline-offset: var(--focus-offset);
+    }
+
+    /* Secondary Neutral Button */
+    .secondary-btn {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: 7px 14px;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: color var(--duration-interactive), border-color var(--duration-interactive);
+    }
+
+    .secondary-btn:hover {
+      color: var(--color-text-primary);
+      border-color: var(--color-outline-interactive);
+    }
+
+    .download-link {
+      margin-left: auto;
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      text-decoration: none;
+    }
+    .download-link:hover {
+      color: var(--color-text-secondary);
+    }
+
+    /* Output Pane Content */
+    .output-content {
+      padding: var(--space-4);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .run-output-display {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--color-text-primary);
+      background-color: var(--color-canvas);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-control);
+      padding: var(--space-3);
+      min-height: 52px;
+      white-space: pre-wrap;
+      animation: fadeIn var(--duration-result) var(--ease-standard);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .output-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-status-success);
+    }
+
+    .output-explanation-text {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* Plain Language Explanation Section */
+    .explain-card {
+      background-color: var(--color-surface-raised);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-panel);
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .explain-card h3 {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .explain-card p {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-normal);
+    }
+
+    /* Bottom Navigation Pagination */
+    .lesson-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--color-divider);
+    }
+
+    .pagination-next {
+      background-color: var(--color-action-primary-fill);
+      color: var(--color-action-primary-label);
+      text-decoration: none;
+      padding: 9px 20px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      border-radius: var(--radius-control);
+      box-shadow: 0 2px 0 var(--color-action-primary-edge);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: transform var(--duration-interactive), box-shadow var(--duration-interactive);
+      margin-left: auto;
+    }
+    .pagination-next:hover {
+      filter: brightness(0.96);
+    }
+    .pagination-next:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--color-divider);
+      padding: var(--space-6);
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      display: flex;
+      justify-content: center;
+      gap: var(--space-4);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-lesson">Skip to lesson content</a>
+
+  <!-- Desktop Header -->
+  <div class="app-header-wrap">
+    <header class="app-header">
+      <a class="brand" href="/en">
+        learntify<span class="brand-dot" aria-hidden="true">.</span>
+      </a>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-context">Learn JavaScript</span>
+
+      <!-- Desktop Navigation Groups -->
+      <nav class="nav-desktop" aria-label="Main navigation">
+        <div class="nav-group">
+          <a class="nav-link" href="/en/today">Today</a>
+          <a class="nav-link" href="/en/learn" aria-current="page">Learn</a>
+          <a class="nav-link" href="/en/practice">Practice</a>
+        </div>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <div class="nav-group">
+          <a class="nav-link" href="/en/projects">Projects</a>
+          <a class="nav-link" href="/en/notebook">Notebook</a>
+          <a class="nav-link" href="/en/study-plans">Study plans</a>
+          <a class="nav-link" href="/en/progress">Progress</a>
+        </div>
+      </nav>
+
+      <!-- Header Tools -->
+      <div class="header-tools">
+        <a class="language-toggle" href="/es/learn/lessons/values-and-expressions" lang="es">Español</a>
+        <button class="account-button" type="button" aria-haspopup="menu" aria-expanded="false">
+          Account <span aria-hidden="true">⌄</span>
+        </button>
+      </div>
+    </header>
+  </div>
+
+  <main class="shell" id="main-lesson">
+    <div class="lesson-meta-top">
+      <span class="eyebrow">JavaScript / Foundations</span>
+      <span class="badge-scope">Lesson 01 · 15 min</span>
+    </div>
+
+    <div class="workspace-grid">
+      <!-- Curriculum Path Sidebar -->
+      <aside class="curriculum-sidebar" aria-label="Lessons in Foundations">
+        <span class="eyebrow">Curriculum Path</span>
+        <ol class="lesson-path-list">
+          <li>
+            <a class="lesson-step-item" href="#values-and-expressions" aria-current="step">
+              <span class="step-number">01</span>
+              <span>Values & expressions</span>
+            </a>
+          </li>
+          <li>
+            <a class="lesson-step-item" href="#storing-values">
+              <span class="step-number">02</span>
+              <span>Storing values</span>
+            </a>
+          </li>
+          <li>
+            <a class="lesson-step-item" href="#working-with-strings">
+              <span class="step-number">03</span>
+              <span>Working with text</span>
+            </a>
+          </li>
+          <li>
+            <a class="lesson-step-item" href="#making-decisions">
+              <span class="step-number">04</span>
+              <span>Making decisions</span>
+            </a>
+          </li>
+          <li>
+            <a class="lesson-step-item" href="#functions-intro">
+              <span class="step-number">05</span>
+              <span>Building functions</span>
+            </a>
+          </li>
+        </ol>
+        <div class="sidebar-footer">
+          <span>Free MIT course · No paywall</span>
+        </div>
+      </aside>
+
+      <!-- Main Lesson Container with Editorial Margin -->
+      <div class="lesson-container">
+        <div class="lesson-layout-with-margin">
+          <!-- Signature Margin -->
+          <div class="editorial-margin" aria-hidden="true">
+            <div class="margin-marker active">
+              <span class="margin-tag">Predict</span>
+              <span class="margin-line"></span>
+            </div>
+            <div class="margin-marker active" style="margin-top: 140px;">
+              <span class="margin-tag">Run</span>
+              <span class="margin-line"></span>
+            </div>
+            <div class="margin-marker" style="margin-top: 190px;">
+              <span class="margin-tag">Explain</span>
+              <span class="margin-line"></span>
+            </div>
+          </div>
+
+          <!-- Lesson Card Body -->
+          <article class="lesson-card">
+            <header class="lesson-heading">
+              <h1>Values become expressions</h1>
+              <p class="objective">Predict a value before running a program, then verify how JavaScript computes it.</p>
+            </header>
+
+            <!-- Prose Section -->
+            <div class="prose-section">
+              <p>A <strong>value</strong> is a fundamental piece of information in JavaScript, such as the number <code>3</code> or the text <code>"hello"</code>.</p>
+              <p>An <strong>expression</strong> is any valid unit of code that resolves to a value. When JavaScript encounters <code>2 + 3</code>, it evaluates the arithmetic operation first to produce <code>5</code>.</p>
+              <p><code>console.log()</code> displays a value in the output area. Quotation marks delineate strings of text; they are never printed in the actual output.</p>
+            </div>
+
+            <!-- Predict Box -->
+            <section class="predict-box" aria-labelledby="predict-title">
+              <legend id="predict-title">Predict: What will this program display?</legend>
+              <div class="choices-group">
+                <label class="choice-label selected">
+                  <input type="radio" name="prediction" value="5" checked>
+                  <span class="choice-text">5</span>
+                </label>
+                <label class="choice-label">
+                  <input type="radio" name="prediction" value="2 + 3">
+                  <span class="choice-text">2 + 3</span>
+                </label>
+                <label class="choice-label">
+                  <input type="radio" name="prediction" value="23">
+                  <span class="choice-text">23</span>
+                </label>
+              </div>
+
+              <!-- Prediction Feedback -->
+              <div class="prediction-feedback" role="status">
+                <span class="feedback-icon" aria-hidden="true">✓</span>
+                <div>
+                  <strong>You predicted it.</strong> JavaScript calculates <code>2 + 3</code> first, then displays the resulting value <code>5</code>. Now run the code below to see it live.
+                </div>
+              </div>
+            </section>
+
+            <!-- Code Exercise Workbench -->
+            <section class="code-workbench" aria-labelledby="workbench-title">
+              <div class="workbench-split">
+                <!-- Editor Pane -->
+                <div class="editor-pane">
+                  <div class="pane-toolbar">
+                    <label for="code-input">Your JavaScript</label>
+                    <span>JAVASCRIPT</span>
+                  </div>
+                  <textarea id="code-input" class="editor-area" spellcheck="false" wrap="off" rows="6">console.log(2 + 3);</textarea>
+                  <div class="workbench-controls">
+                    <button class="run-key" type="button" id="run-btn">
+                      <span>Run code</span>
+                    </button>
+                    <button class="secondary-btn" type="button" id="reset-btn">
+                      <span>Reset</span>
+                    </button>
+                    <a class="download-link" href="#" download="values-and-expressions.js">Download .js</a>
+                  </div>
+                </div>
+
+                <!-- Output Pane -->
+                <div class="output-pane" aria-label="Code output">
+                  <div class="pane-toolbar">
+                    <span>Your output</span>
+                    <span class="output-status">
+                      <span aria-hidden="true">✓</span> Output matches
+                    </span>
+                  </div>
+                  <div class="output-content">
+                    <pre class="run-output-display" id="output-box">5</pre>
+                    <p class="output-explanation-text">
+                      Output matches. Notice how JavaScript performs the calculation before calling <code>console.log</code>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Explain / Reflection Card -->
+            <section class="explain-card" aria-labelledby="explain-title">
+              <h3 id="explain-title">Explain: Why does this produce 5?</h3>
+              <p>
+                In your own words: JavaScript evaluates the operand <code>2</code> and operand <code>3</code> through the addition operator <code>+</code>. The resulting primitive number value <code>5</code> is passed as an argument to <code>console.log()</code>, writing it to the standard output.
+              </p>
+            </section>
+
+            <!-- Pagination -->
+            <nav class="lesson-pagination" aria-label="Continue learning">
+              <a class="pagination-next" href="#next">
+                <span>Next lesson: Storing values</span>
+                <span aria-hidden="true">→</span>
+              </a>
+            </nav>
+          </article>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>Learntify.</span>
+    <span>Free to learn · MIT licensed · Built in the open</span>
+    <span>Juan Pablo Bovio Vallejo</span>
+  </footer>
+
+  <script>
+    // Clay depth press demo & run output simulation
+    const runBtn = document.getElementById('run-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const outputBox = document.getElementById('output-box');
+    const codeInput = document.getElementById('code-input');
+
+    runBtn?.addEventListener('click', () => {
+      outputBox.style.opacity = '0';
+      setTimeout(() => {
+        try {
+          // Simple evaluation simulation for demo
+          outputBox.textContent = '5';
+          outputBox.style.opacity = '1';
+        } catch(e) {
+          outputBox.textContent = String(e);
+        }
+      }, 120);
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      codeInput.value = 'console.log(2 + 3);';
+      outputBox.textContent = '5';
+    });
+  </script>
+</body>
+</html>

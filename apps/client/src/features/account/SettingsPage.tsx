@@ -6,10 +6,12 @@ import { settingsCopy } from './settings-copy';
 import { accountCopy } from './copy';
 import { PasskeySettings } from './PasskeySettings';
 import { SocialButtons } from './SocialButtons';
+import { notifySessionChange } from '../../shared/session-events';
 
 const api = createApiClient();
 export function SettingsPage({ locale }: { locale: Locale }) {
   const text = settingsCopy[locale];
+  const en = locale === 'en';
   const [state, setState] = useState<
     'loading' | 'guest' | 'member' | 'disabled' | 'failed' | 'deleted'
   >('loading');
@@ -37,63 +39,132 @@ export function SettingsPage({ locale }: { locale: Locale }) {
     return () => controller.abort();
   }, [reload]);
   return (
-    <PageFrame locale={locale} title={text.title} variant="account">
+    <PageFrame
+      locale={locale}
+      title={text.title}
+      variant="account"
+      eyebrow={en ? 'Account' : 'Cuenta'}
+      lede={
+        en
+          ? 'Your preferences, sign-in methods and session, grouped by the task you want to do.'
+          : 'Tus preferencias, métodos de acceso y sesión, agrupados por la tarea que quieres hacer.'
+      }
+    >
       {state === 'loading' ? (
-        <p role="status">{text.loading}</p>
+        <div className="skeleton-panel" role="status">
+          <p>{text.loading}</p>
+        </div>
       ) : state === 'disabled' ? (
-        <p>{text.unavailable}</p>
+        <section className="clay-card empty-state">
+          <h2>{en ? 'Accounts are taking a pause.' : 'Las cuentas están en pausa.'}</h2>
+          <p>{text.unavailable}</p>
+          <a className="primary-link" href={'/' + locale + '/learn'}>
+            {en ? 'Continue learning' : 'Seguir aprendiendo'}
+          </a>
+        </section>
       ) : state === 'failed' ? (
-        <div role="alert">
+        <div role="alert" className="callout callout-error">
           <p>{text.error}</p>
           <button onClick={() => setReload((n) => n + 1)}>{text.retry}</button>
         </div>
       ) : state === 'guest' ? (
-        <>
+        <section className="clay-card empty-state">
+          <span className="stage-label">{en ? 'Your account' : 'Tu cuenta'}</span>
+          <h2>{en ? 'Sign in to keep your work.' : 'Inicia sesión para guardar tu trabajo.'}</h2>
           <p>{text.guest}</p>
-          <a href={'/' + locale + '/auth'}>{text.signIn}</a>
-        </>
+          <div className="page-actions">
+            <a className="primary-link" href={'/' + locale + '/auth'}>
+              {text.signIn}
+            </a>
+            <a className="text-link" href={'/' + locale + '/learn'}>
+              {en ? 'Browse lessons' : 'Explorar lecciones'} →
+            </a>
+          </div>
+        </section>
       ) : state === 'deleted' ? (
-        <>
-          <p role="status">{text.done}</p>
-          <a href={'/' + locale + '/today'}>{text.back}</a>
-        </>
+        <section className="clay-card empty-state">
+          <span className="stage-label success-label">
+            <span aria-hidden="true">✓</span> {en ? 'Done' : 'Listo'}
+          </span>
+          <h2 role="status">{text.done}</h2>
+          <p>
+            {en
+              ? 'Your account and its private work have been removed.'
+              : 'Tu cuenta y su trabajo privado se han eliminado.'}
+          </p>
+          <a className="primary-link" href={'/' + locale + '/learn'}>
+            {text.back}
+          </a>
+        </section>
       ) : (
         <>
-          <p>
-            <a href={'/' + locale + '/start'}>{text.preferences}</a>
-          </p>
-          <button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError(null);
-              try {
-                await api.signOut();
-                setState('guest');
-                setConfirmation('');
-              } catch {
-                setError('request');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {text.signOut}
-          </button>
-          <p>{accountCopy[locale].sessionHelp}</p>
-          <PasskeySettings locale={locale} />
-          <SocialButtons locale={locale} link />
+          {error && (
+            <p role="alert" className="callout callout-error">
+              {error === 'reauth' ? text.reauthenticate : text.error}
+            </p>
+          )}
+          <div className="settings-grid">
+            <section className="clay-card settings-card" aria-labelledby="settings-preferences">
+              <p className="eyebrow">{en ? 'Learning' : 'Aprendizaje'}</p>
+              <h2 id="settings-preferences">{en ? 'Preferences' : 'Preferencias'}</h2>
+              <p>
+                {en
+                  ? 'Choose a direction and a weekly rhythm. These choices suggest a starting point; they never limit what you can learn.'
+                  : 'Elige una dirección y un ritmo semanal. Estas opciones sugieren un punto de partida; nunca limitan lo que puedes aprender.'}
+              </p>
+              <a className="secondary-link" href={'/' + locale + '/start'}>
+                {text.preferences} →
+              </a>
+            </section>
+            <section className="clay-card settings-card" aria-labelledby="settings-session">
+              <p className="eyebrow">{en ? 'This browser' : 'Este navegador'}</p>
+              <h2 id="settings-session">{en ? 'Current session' : 'Sesión actual'}</h2>
+              <p role="status">{accountCopy[locale].signedIn}</p>
+              <p>{accountCopy[locale].sessionHelp}</p>
+              <button
+                className="secondary-button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError(null);
+                  try {
+                    await api.signOut();
+                    notifySessionChange();
+                    setState('guest');
+                    setConfirmation('');
+                  } catch {
+                    setError('request');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {text.signOut}
+              </button>
+            </section>
+          </div>
+          <div className="settings-methods">
+            <PasskeySettings locale={locale} />
+            <SocialButtons locale={locale} link />
+          </div>
           {new URL(window.location.href).searchParams.has('socialError') && (
-            <p role="alert">
-              {locale === 'en'
+            <p role="alert" className="callout callout-error">
+              {en
                 ? 'Could not connect the provider. Use the same verified email and try again.'
                 : 'No se pudo conectar el proveedor. Usa el mismo correo verificado e inténtalo de nuevo.'}
             </p>
           )}
-          <section className="clay-card" aria-labelledby="sessions-title">
-            <h2 id="sessions-title">{text.otherSessions}</h2>
-            <p>{text.otherSessionsHelp}</p>
+          <section
+            className="clay-card settings-card settings-wide"
+            aria-labelledby="sessions-title"
+          >
+            <div>
+              <p className="eyebrow">{en ? 'Security' : 'Seguridad'}</p>
+              <h2 id="sessions-title">{text.otherSessions}</h2>
+              <p>{text.otherSessionsHelp}</p>
+            </div>
             <button
+              className="secondary-button"
               disabled={busy}
               onClick={async () => {
                 setBusy(true);
@@ -115,10 +186,16 @@ export function SettingsPage({ locale }: { locale: Locale }) {
             {sessionsRevoked && <p role="status">{text.otherSessionsDone}</p>}
           </section>
           {canDelete ? (
-            <section className="clay-card account-deletion" aria-labelledby="deletion-title">
-              <h2 id="deletion-title">{text.deletion}</h2>
-              <p>{text.explanation}</p>
-              <p>{text.recent}</p>
+            <section
+              className="clay-card settings-card settings-wide account-deletion"
+              aria-labelledby="deletion-title"
+            >
+              <div>
+                <p className="eyebrow">{en ? 'Danger zone' : 'Zona sensible'}</p>
+                <h2 id="deletion-title">{text.deletion}</h2>
+                <p>{text.explanation}</p>
+                <p>{text.recent}</p>
+              </div>
               <form
                 onSubmit={async (event) => {
                   event.preventDefault();
@@ -152,7 +229,11 @@ export function SettingsPage({ locale }: { locale: Locale }) {
                   disabled={busy}
                   onChange={(event) => setConfirmation(event.target.value)}
                 />
-                <button disabled={busy || confirmation !== 'DELETE'} type="submit">
+                <button
+                  className="danger-button"
+                  disabled={busy || confirmation !== 'DELETE'}
+                  type="submit"
+                >
                   {busy ? text.deleting : text.remove}
                 </button>
               </form>
@@ -160,7 +241,6 @@ export function SettingsPage({ locale }: { locale: Locale }) {
           ) : (
             <p>{text.deletionUnavailable}</p>
           )}
-          {error && <p role="alert">{error === 'reauth' ? text.reauthenticate : text.error}</p>}
         </>
       )}
     </PageFrame>

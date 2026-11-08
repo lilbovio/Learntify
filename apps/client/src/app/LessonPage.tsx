@@ -88,17 +88,19 @@ export function LessonPage() {
   }, [locale, reload, currentLessonId]);
 
   return (
-    <div className="shell">
+    <div className="shell app-shell">
       <a className="skip-link" href="#lesson">
-        Skip to lesson / Ir a la lección
+        {locale === 'en' ? 'Skip to lesson' : 'Ir a la lección'}
       </a>
       <AppHeader locale={locale} onLocaleChange={setLocale} />
-      <main>
-        <AccountPanel
-          locale={locale}
-          onAccountChange={setAccountId}
-          unsavedNotes={notesDirty || codeDirty}
-        />
+      <main className="lesson-main">
+        <div className="lesson-account">
+          <AccountPanel
+            locale={locale}
+            onAccountChange={setAccountId}
+            unsavedNotes={notesDirty || codeDirty}
+          />
+        </div>
         <section className="lesson-intro" aria-labelledby="welcome">
           <div>
             <p className="eyebrow">
@@ -148,70 +150,92 @@ export function LessonPage() {
             className="lesson"
             aria-busy={loading}
           >
-            {loading && <p role="status">{text.loading}</p>}
-            {loadFailed && (
-              <div role="alert">
-                <p>{text.error}</p>
-                <button onClick={() => setReload((value) => value + 1)}>{text.retry}</button>
+            <div className="lesson-layout">
+              <div className="lesson-margin" aria-hidden="true">
+                <span>{locale === 'en' ? 'Predict' : 'Predice'}</span>
+                <span>{locale === 'en' ? 'Run' : 'Ejecuta'}</span>
+                <span>{locale === 'en' ? 'Explain' : 'Explica'}</span>
               </div>
-            )}
-            {/* Keep a locale refresh mounted so temporary answers survive unavailable browser storage. */}
-            {lesson && lesson.id === currentLessonId && (
-              <div hidden={loading || loadFailed}>
-                {lesson.project && <ProjectGuide project={lesson.project} locale={locale} />}
-                <LessonWorkspace
-                  accountId={accountId ?? null}
-                  accountReady={accountId !== undefined}
-                  onCodeDirty={setCodeDirty}
-                  key={lesson.id + ':' + lesson.version}
-                  lesson={lesson}
-                  locale={locale}
-                />
-                {lesson.project && <ProjectGuide project={lesson.project} locale={locale} review />}
-                {lesson.project && !accountId && (
-                  <p>
-                    {locale === 'en'
-                      ? 'Sign in to save your walkthrough in private lesson notes.'
-                      : 'Inicia sesión para guardar tu explicación en notas privadas.'}
-                  </p>
+              <div className="lesson-body">
+                {loading && <p role="status">{text.loading}</p>}
+                {loadFailed && (
+                  <div role="alert">
+                    <p>{text.error}</p>
+                    <button onClick={() => setReload((value) => value + 1)}>{text.retry}</button>
+                  </div>
                 )}
-                {accountId && (
-                  <LessonNotes
-                    key={accountId + ':' + lesson.id + ':' + lesson.version}
-                    lessonId={lesson.id}
-                    version={lesson.version}
-                    locale={locale}
-                    onDirty={setNotesDirty}
-                  />
-                )}
-                <nav
-                  className="lesson-pagination"
-                  aria-label={locale === 'en' ? 'Continue learning' : 'Continuar aprendiendo'}
-                >
-                  {currentIndex > 0 && (
-                    <button
-                      className="secondary-button"
-                      onClick={() => selectLesson(lessons[currentIndex - 1]!.id)}
+                {/* Keep a locale refresh mounted so temporary answers survive unavailable browser storage. */}
+                {lesson && lesson.id === currentLessonId && (
+                  <div hidden={loading || loadFailed}>
+                    {lesson.project && <ProjectGuide project={lesson.project} locale={locale} />}
+                    <LessonWorkspace
+                      accountId={accountId ?? null}
+                      accountReady={accountId !== undefined}
+                      onCodeDirty={setCodeDirty}
+                      key={lesson.id + ':' + lesson.version}
+                      lesson={lesson}
+                      locale={locale}
+                    />
+                    {lesson.project && (
+                      <ProjectGuide project={lesson.project} locale={locale} review />
+                    )}
+                    {lesson.project && !accountId && (
+                      <p>
+                        {locale === 'en'
+                          ? 'Sign in to save your walkthrough in private lesson notes.'
+                          : 'Inicia sesión para guardar tu explicación en notas privadas.'}
+                      </p>
+                    )}
+                    {accountId && (
+                      <>
+                        <p className="eyebrow stage-kicker">
+                          <span aria-hidden="true">03 · </span>
+                          {locale === 'en' ? 'Explain' : 'Explica'}
+                        </p>
+                        <LessonNotes
+                          key={accountId + ':' + lesson.id + ':' + lesson.version}
+                          lessonId={lesson.id}
+                          version={lesson.version}
+                          locale={locale}
+                          onDirty={setNotesDirty}
+                        />
+                      </>
+                    )}
+                    <nav
+                      className="lesson-pagination"
+                      aria-label={locale === 'en' ? 'Continue learning' : 'Continuar aprendiendo'}
                     >
-                      {locale === 'en' ? 'Previous lesson' : 'Lección anterior'}
-                    </button>
-                  )}
-                  {currentIndex >= 0 && currentIndex < lessons.length - 1 ? (
-                    <button onClick={() => selectLesson(lessons[currentIndex + 1]!.id)}>
-                      {locale === 'en' ? 'Next lesson' : 'Siguiente lección'}
-                    </button>
-                  ) : (
-                    <a href={'/' + locale + '/today'}>
-                      {locale === 'en' ? 'Return to your practice' : 'Volver a tu práctica'}
-                    </a>
-                  )}
-                </nav>
+                      {currentIndex > 0 && (
+                        <button
+                          className="secondary-button"
+                          onClick={() => selectLesson(lessons[currentIndex - 1]!.id)}
+                        >
+                          {locale === 'en' ? 'Previous lesson' : 'Lección anterior'}
+                        </button>
+                      )}
+                      {currentIndex >= 0 && currentIndex < lessons.length - 1 ? (
+                        <button onClick={() => selectLesson(lessons[currentIndex + 1]!.id)}>
+                          {locale === 'en' ? 'Next lesson' : 'Siguiente lección'}
+                        </button>
+                      ) : (
+                        <a href={'/' + locale + '/today'}>
+                          {locale === 'en' ? 'Return to your practice' : 'Volver a tu práctica'}
+                        </a>
+                      )}
+                    </nav>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </article>
         </div>
       </main>
-      <footer>Learntify · MIT · Juan Pablo Bovio Vallejo</footer>
+      <footer className="site-footer">
+        <span>
+          Learntify<span aria-hidden="true">.</span>
+        </span>
+        <span>MIT · Juan Pablo Bovio Vallejo</span>
+      </footer>
     </div>
   );
 }

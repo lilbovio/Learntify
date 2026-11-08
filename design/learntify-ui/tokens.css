@@ -1,0 +1,104 @@
+/**
+ * Learntify Monochrome Design System Tokens
+ * Reference: Resend website aesthetic (near-black canvas, white typography, restrained borders, generous spacing)
+ * Target: Complete WCAG AAA / AA contrast compliance across all surfaces
+ */
+
+:root {
+  /* Surface Tokens */
+  --color-canvas: #101214;
+  --color-surface-reading: #171A1D;
+  --color-surface-raised: #202529;
+  --color-surface-translucent: rgba(16, 18, 20, 0.85);
+
+  /* Border & Divider Tokens */
+  --color-divider: #343B40;
+  --color-outline-interactive: #74818A;
+
+  /* Typography & Foreground Tokens */
+  --color-text-primary: #F3F1EB;
+  --color-text-secondary: #B2BABD;
+  --color-text-tertiary: #74818A;
+  --color-text-inverse: #101214;
+
+  /* Primary Action Tokens */
+  --color-action-primary-fill: #F3F1EB;
+  --color-action-primary-label: #101214;
+  --color-action-primary-edge: #000000;
+
+  /* Semantic Feedback Tokens (Text + Icon paired) */
+  --color-status-success: #A3E6C3;
+  --color-status-warning: #F3C477;
+  --color-status-error: #FF9696;
+  --color-status-error-bg: rgba(255, 150, 150, 0.08);
+
+  /* Focus Indicator Tokens */
+  --color-focus-ring: #F3F1EB;
+  --focus-offset: 3px;
+  --focus-width: 2px;
+
+  /* Typography Scale */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13.5px;
+  --text-base: 15px;
+  --text-lesson: 17px;
+  --text-lg: 19px;
+  --text-xl: 23px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-display: clamp(2rem, 4vw, 3.2rem);
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-code: 1.5;
+
+  --measure-prose: 64ch; /* Strict 60-68 ch for readability */
+
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Radius Tokens */
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-pill: 9999px;
+
+  /* Motion & Animation Tokens */
+  --duration-drawer: 200ms;
+  --duration-popover: 130ms;
+  --duration-result: 120ms;
+  --duration-interactive: 100ms;
+
+  --ease-drawer: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: ease-out;
+
+  /* Layout Boundaries */
+  --width-shell: 1200px;
+  --width-main: 1000px;
+  --width-lesson-main: 1120px;
+  --width-narrow: 560px;
+  --height-topbar: 68px;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-drawer: 0ms;
+    --duration-popover: 0ms;
+    --duration-result: 0ms;
+    --duration-interactive: 0ms;
+  }
+}

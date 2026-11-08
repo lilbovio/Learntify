@@ -71,17 +71,27 @@ export function LessonWorkspace({
         <span>{text.stage}</span>
         <span>{text.scope}</span>
       </div>
-      <h2>{lesson.title}</h2>
-      <p className="objective">{lesson.objective}</p>
-      <div className="explanation">
+      <header className="lesson-title">
+        <h2>{lesson.title}</h2>
+        <p className="objective">{lesson.objective}</p>
+      </header>
+      <div className="explanation prose">
         {lesson.explanation.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
       </div>
-      <pre aria-label="JavaScript">
-        <code>{lesson.example}</code>
-      </pre>
+      <figure className="example-block">
+        <figcaption>{locale === 'en' ? 'The expression' : 'La expresión'}</figcaption>
+        <pre aria-label="JavaScript">
+          <code>{lesson.example}</code>
+        </pre>
+      </figure>
+      <p className="eyebrow stage-kicker">
+        <span aria-hidden="true">01 · </span>
+        {locale === 'en' ? 'Predict' : 'Predice'}
+      </p>
       <form
+        className="predict-form"
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -118,11 +128,19 @@ export function LessonWorkspace({
       </form>
       {failed && <p role="alert">{text.feedbackError}</p>}
       {currentFeedback && (
-        <section className="feedback" role="status">
-          <h3>{currentFeedback.correct ? text.correct : text.incorrect}</h3>
-          <p>{currentFeedback.explanation}</p>
-          <h4>{text.reflection}</h4>
-          <p>{currentFeedback.nextStep}</p>
+        <section
+          className={'feedback ' + (currentFeedback.correct ? 'feedback-correct' : 'feedback-next')}
+          role="status"
+        >
+          <p className="feedback-mark" aria-hidden="true">
+            {currentFeedback.correct ? '✓' : '→'}
+          </p>
+          <div>
+            <h3>{currentFeedback.correct ? text.correct : text.incorrect}</h3>
+            <p>{currentFeedback.explanation}</p>
+            <h4>{text.reflection}</h4>
+            <p>{currentFeedback.nextStep}</p>
+          </div>
         </section>
       )}
       <p className="practice-note">{text.note}</p>

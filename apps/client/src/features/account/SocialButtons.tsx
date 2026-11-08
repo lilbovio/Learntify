@@ -37,7 +37,22 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
   }, [link]);
   if (!providers.length && !failure) return null;
   return (
-    <div className="social-providers">
+    <section
+      className={link ? 'social-providers auth-method' : 'social-providers auth-method'}
+      aria-labelledby="provider-signin-title"
+    >
+      <div className="auth-method-heading">
+        <span className="auth-step">{link ? '03' : '01'}</span>
+        <h3 id="provider-signin-title">
+          {link
+            ? locale === 'en'
+              ? 'Connected providers'
+              : 'Proveedores conectados'
+            : locale === 'en'
+              ? 'Continue with a provider'
+              : 'Continuar con un proveedor'}
+        </h3>
+      </div>
       {connected.length > 0 && (
         <p role="status">
           {locale === 'en' ? 'Connected: ' : 'Conectados: '}
@@ -53,48 +68,50 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
             ? 'Elige otra forma de entrar. Usa el mismo correo verificado de tu cuenta de Learntify.'
             : '¿Ya conectaste un proveedor? Entra aquí. Si no, entra por correo o clave de acceso y conéctalo en configuración.'}
       </p>
-      {providers.map((provider) => (
-        <button
-          key={provider}
-          type="button"
-          disabled={busy || (link && connected.includes(provider))}
-          onClick={async () => {
-            setBusy(true);
-            setFailure(null);
-            setVerifying(false);
-            try {
-              const start = () => api.startSocial(link ? 'link' : 'sign-in', provider, locale);
-              const url = link
-                ? await connectProvider({
-                    start,
-                    currentAccount: () => api.currentAccount(),
-                    verify: () =>
-                      supportsPasskeys()
-                        ? passkeyAuth.signIn.passkey()
-                        : Promise.resolve({ error: true }),
-                    onVerify: () => setVerifying(true),
-                  })
-                : await start();
-              window.location.assign(url);
-            } catch (cause) {
-              setFailure(socialFailure(cause));
-              setBusy(false);
+      <div className="provider-actions">
+        {providers.map((provider) => (
+          <button
+            key={provider}
+            type="button"
+            disabled={busy || (link && connected.includes(provider))}
+            onClick={async () => {
+              setBusy(true);
+              setFailure(null);
               setVerifying(false);
-            }
-          }}
-        >
-          {link && connected.includes(provider)
-            ? (provider === 'google' ? 'Google' : 'GitHub') +
-              (locale === 'en' ? ' — Connected' : ' — Conectado')
-            : (locale === 'en'
-                ? link
-                  ? 'Connect '
-                  : 'Continue with '
-                : link
-                  ? 'Conectar '
-                  : 'Continuar con ') + (provider === 'google' ? 'Google' : 'GitHub')}
-        </button>
-      ))}
+              try {
+                const start = () => api.startSocial(link ? 'link' : 'sign-in', provider, locale);
+                const url = link
+                  ? await connectProvider({
+                      start,
+                      currentAccount: () => api.currentAccount(),
+                      verify: () =>
+                        supportsPasskeys()
+                          ? passkeyAuth.signIn.passkey()
+                          : Promise.resolve({ error: true }),
+                      onVerify: () => setVerifying(true),
+                    })
+                  : await start();
+                window.location.assign(url);
+              } catch (cause) {
+                setFailure(socialFailure(cause));
+                setBusy(false);
+                setVerifying(false);
+              }
+            }}
+          >
+            {link && connected.includes(provider)
+              ? (provider === 'google' ? 'Google' : 'GitHub') +
+                (locale === 'en' ? ' — Connected' : ' — Conectado')
+              : (locale === 'en'
+                  ? link
+                    ? 'Connect '
+                    : 'Continue with '
+                  : link
+                    ? 'Conectar '
+                    : 'Continuar con ') + (provider === 'google' ? 'Google' : 'GitHub')}
+          </button>
+        ))}
+      </div>
       {verifying && (
         <p role="status">
           {locale === 'en'
@@ -108,6 +125,6 @@ export function SocialButtons({ locale, link = false }: { locale: Locale; link?:
           {locale === 'en' ? 'Confirm by email instead' : 'Confirmar por correo'}
         </a>
       )}
-    </div>
+    </section>
   );
 }
