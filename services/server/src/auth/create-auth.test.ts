@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { getMigrations } from 'better-auth/db/migration';
 import type { D1Database } from '@cloudflare/workers-types';
@@ -189,6 +189,79 @@ describe('passwordless authentication with local D1', () => {
       (await db.prepare('SELECT COUNT(*) AS count FROM verification').first<{ count: number }>())
         ?.count,
     ).toBe(0);
+  });
+  it('public alpha creates an uninvited account only after email verification', async () => {
+    const schema = await readFile(
+      new URL('../../migrations/0004_email_budget.sql', import.meta.url),
+      'utf8',
+    );
+    for (const statement of schema
+      .replace(/^--.*$/gm, '')
+      .split(';')
+      .filter((part) => part.trim()))
+      await db.prepare(statement).run();
+    const bindings = {
+      ACCOUNT_MODE: 'public-alpha',
+      APP_ORIGIN: origin,
+      AUTH_SECRET: 'a'.repeat(40),
+      RESEND_API_KEY: 're_' + 'b'.repeat(24),
+      EMAIL_FROM: 'learn@learntify.test',
+      DB: db,
+    };
+    let link = '';
+    const nativeFetch = globalThis.fetch;
+    const transport = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      if (input !== 'https://api.resend.com/emails') return nativeFetch(input, init);
+      const body = JSON.parse(String(init?.body)) as { text: string };
+      link = body.text.split('\n').find((line) => line.startsWith(origin + '/api/auth/')) ?? '';
+      return new Response('{}', { status: 200 });
+    });
+    try {
+      const requested = await production.fetch(
+        new Request(origin + '/api/auth/sign-in/magic-link', {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'new-person@example.test',
+            callbackURL: '/en/today',
+            metadata: { adultConfirmed: true },
+          }),
+        }),
+        bindings,
+      );
+      expect(requested.status).toBe(200);
+      expect(link).not.toBe('');
+      expect(
+        (await db.prepare('SELECT COUNT(*) AS count FROM user').first<{ count: number }>())?.count,
+      ).toBe(0);
+      const verified = await production.fetch(new Request(link), bindings);
+      expect(verified.status).toBe(302);
+      const cookie = verified.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      expect(
+        (
+          await production.fetch(
+            new Request(origin + '/api/v1/me', { headers: { cookie } }),
+            bindings,
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        await db
+          .prepare('SELECT emailVerified FROM user WHERE email = ?')
+          .bind('new-person@example.test')
+          .first(),
+      ).toMatchObject({ emailVerified: 1 });
+      expect((await production.fetch(new Request(origin + '/api/v1/me'), bindings)).status).toBe(
+        401,
+      );
+      const replay = await production.fetch(new Request(link), bindings);
+      expect(replay.headers.get('set-cookie') ?? '').not.toContain('session_token=');
+    } finally {
+      transport.mockRestore();
+    }
   });
   it('defaults to closed signup even with a valid link', async () => {
     const closed = createAuth({

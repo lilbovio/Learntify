@@ -25,8 +25,11 @@ export async function serveAccounts(
   request: Request,
   configuration: Extract<AccountConfiguration, { kind: 'ready' }>,
 ) {
-  const admission = previewAdmission(configuration.previewEmails);
+  const admission = configuration.allowSignUp
+    ? () => true
+    : previewAdmission(configuration.previewEmails);
   const auth = createAuth({
+    allowSignUp: configuration.allowSignUp,
     admission,
     socialProviders: configuration.socialProviders,
     database: configuration.database,
@@ -58,7 +61,7 @@ export async function serveAccounts(
   }).fetch(request);
 }
 
-/** Same-origin /api route; signup and production deletion remain closed pending launch safeguards. */
+/** Same-origin API with explicit account mode; production deletion remains disabled. */
 export default {
   async scheduled(_event: unknown, env: ProductionBindings) {
     const configuration = readAccountConfiguration(env);

@@ -4,6 +4,8 @@ Updated November 8, 2026. **The owner-approved alpha is deployed at https://alph
 
 ## First deployment evidence
 
+Public-alpha follow-up enables verified email registration without an invitation. The hosted configuration uses `ACCOUNT_MODE=public-alpha`; the exact-email cohort remains available as `existing-accounts`. Signup is email-first; users can connect providers and enroll passkeys after verification. Private writes remain paused pending the live persistence/recovery rehearsal.
+
 - Source commit: `7eedc07a534f8bd4da0ddbf95f6e6ae5dee537af`.
 - Merged CI passed: https://github.com/lilbovio/Learntify/actions/runs/42524193993.
 - Cloudflare version: `cd2b28c7-5b54-4b5f-b416-05cf7210b8af`.

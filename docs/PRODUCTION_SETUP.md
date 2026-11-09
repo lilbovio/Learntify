@@ -14,6 +14,14 @@ Public signup and production account deletion remain disabled. This is a small p
 
 ## Prepare an initial account
 
+### Public alpha registration
+
+`ACCOUNT_MODE=public-alpha` enables email-link registration without provisioning or `PREVIEW_EMAILS`. The application creates a new account only when the learner verifies their email link. The existing adult confirmation, origin validation, auth rate limits and shared delivery budget (90 requests per UTC day, 2,500 per month) apply. These are application mail limits, not a guarantee of capacity or bot prevention.
+
+First-time learners register through email. They can then enroll a passkey or link Google/GitHub in Settings. Provider signup remains disabled so it cannot bypass the email registration and adult-confirmation flow.
+
+`ACCOUNT_MODE=existing-accounts` retains the restricted cohort behavior described below. `PRIVATE_WRITES` independently controls whether signed-in learners may save their work.
+
 Use Node 24 to generate a reviewable SQL file with a synthetic address first:
 
 ```sh

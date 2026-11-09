@@ -30,6 +30,7 @@ export type AccountConfiguration =
       previewEmails: ReadonlySet<string>;
       socialProviders: SocialCredentials;
       writesPaused: boolean;
+      allowSignUp: boolean;
     };
 
 /** Reports field names only. Never include values in diagnostics or HTTP responses. */
@@ -39,14 +40,15 @@ export function readAccountConfiguration(
 ): AccountConfiguration {
   if (env.ACCOUNT_MODE === undefined || env.ACCOUNT_MODE === 'disabled')
     return { kind: 'disabled' };
-  if (env.ACCOUNT_MODE !== 'existing-accounts')
+  if (!['existing-accounts', 'public-alpha'].includes(env.ACCOUNT_MODE))
     return { kind: 'invalid', fields: ['ACCOUNT_MODE'] };
   const fields: string[] = [];
   if (env.PRIVATE_WRITES !== undefined && !['enabled', 'paused'].includes(env.PRIVATE_WRITES))
     fields.push('PRIVATE_WRITES');
   const social = readSocialCredentials({ ...env });
   fields.push(...social.fields);
-  const previewEmails = parsePreviewEmails(env.PREVIEW_EMAILS);
+  const allowSignUp = env.ACCOUNT_MODE === 'public-alpha';
+  const previewEmails = allowSignUp ? new Set<string>() : parsePreviewEmails(env.PREVIEW_EMAILS);
   if (!previewEmails) fields.push('PREVIEW_EMAILS');
   try {
     const origin = new URL(env.APP_ORIGIN ?? '');
@@ -86,5 +88,6 @@ export function readAccountConfiguration(
     previewEmails: previewEmails!,
     socialProviders: social.credentials,
     writesPaused: env.PRIVATE_WRITES === 'paused',
+    allowSignUp,
   };
 }

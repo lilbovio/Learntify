@@ -211,6 +211,13 @@ export function AccountPanel({
                   </h3>
                 </div>
                 <label htmlFor="account-email">{text.email}</label>
+                {!reauthenticate && (
+                  <p>
+                    {locale === 'en'
+                      ? 'New here? Start with your email. After signing in, you can add a passkey or connect Google or GitHub in Settings.'
+                      : '¿Es tu primera vez? Empieza con tu correo. Después de entrar, puedes añadir una clave de acceso o conectar Google o GitHub en Configuración.'}
+                  </p>
+                )}
                 <input
                   id="account-email"
                   type="email"

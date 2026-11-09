@@ -14,6 +14,7 @@ export default {
     const configuration = readAccountConfiguration(env, 'local-external');
     if (
       configuration.kind !== 'ready' ||
+      configuration.allowSignUp ||
       !['onboarding@resend.dev', 'signin@mail.learntify.lat'].includes(configuration.from) ||
       configuration.previewEmails.size !== 1
     )
