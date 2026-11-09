@@ -6,6 +6,13 @@ Updated November 8, 2026. **The owner-approved alpha is deployed at https://alph
 
 Public-alpha follow-up enables verified email registration without an invitation. The hosted configuration uses `ACCOUNT_MODE=public-alpha`; the exact-email cohort remains available as `existing-accounts`. Signup is email-first; users can connect providers and enroll passkeys after verification. Private writes remain paused pending the live persistence/recovery rehearsal.
 
+- Public registration deployed from `196e8f3080240e73313c150711b19d2128d2a495`.
+- CI passed: https://github.com/lilbovio/Learntify/actions/runs/42551496413.
+- Cloudflare version: `a0073ca9-8d07-413f-845c-56d0eb4c1e52`.
+- Public registration integration test verifies no account before email verification, successful uninvited account/session creation after verification, and replay rejection. All 84 unit/integration tests passed.
+- Public and account browser suites passed after isolated reruns of local timing failures.
+- Live health, account capability and bilingual catalogs passed; both auth pages returned 200, unauthenticated private endpoints returned 401, and malformed registration returned 422. No real registration email was sent during these probes.
+
 - Source commit: `7eedc07a534f8bd4da0ddbf95f6e6ae5dee537af`.
 - Merged CI passed: https://github.com/lilbovio/Learntify/actions/runs/42524193993.
 - Cloudflare version: `cd2b28c7-5b54-4b5f-b416-05cf7210b8af`.
