@@ -1,0 +1,21 @@
+meta {
+  name: 05 List plans
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/v1/study-plans?page=1&limit=20
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+}
+
+tests {
+  test("HTTP 200", function () {
+    expect(res.status).to.equal(200);
+  });
+}

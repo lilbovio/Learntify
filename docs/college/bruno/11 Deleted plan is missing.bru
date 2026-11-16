@@ -1,0 +1,21 @@
+meta {
+  name: 11 Deleted plan is missing
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/v1/study-plans/{{planId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+}
+
+tests {
+  test("HTTP 404", function () {
+    expect(res.status).to.equal(404);
+  });
+}

@@ -81,6 +81,9 @@ See the [architecture](docs/planning/ARCHITECTURE.md), [module rules](docs/plann
 
 ## Documentation
 
+- **REST API and coursework** — [API documentation](APIDocumentation.md), [OpenAPI YAML](docs/college/openapi-study-plans.yaml), [diagrams](docs/college/diagrams.md), [QA/SWE requirements and evidence](docs/college/QA_ENGINEERING.md), [Bruno walkthrough](docs/college/bruno/README.md).
+- **Change history** — [changelog](CHANGELOG.md).
+
 - **Learning features** — [code exercises](docs/CODE_EXERCISES.md), [guided projects](docs/GUIDED_PROJECTS.md), [practice and progress](docs/PRACTICE_PROGRESS.md).
 - **Accounts** — [local accounts](docs/LOCAL_ACCOUNTS.md), [passkeys](docs/PASSKEYS.md), [local OAuth setup](docs/OAUTH_LOCAL_TESTING.md).
 - **Hosting and operations** — [production configuration](docs/PRODUCTION_SETUP.md), [external services](docs/EXTERNAL_SERVICES.md), [operations and recovery](docs/OPERATIONS.md), [alpha invitations](docs/ALPHA_INVITATIONS.md).

@@ -1,0 +1,44 @@
+meta {
+  name: 04 Create plan
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/study-plans
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "slug": "{{planSlug}}",
+    "title": "JavaScript foundations",
+    "description": "Practice variables, arrays and functions.",
+    "weeklyMinutes": 180
+  }
+}
+
+script:pre-request {
+  bru.setVar("planSlug", "bruno-demo-" + Date.now());
+  bru.deleteVar("planId");
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("planId", res.body.data.id);
+}
+
+tests {
+  test("HTTP 201", function () {
+    expect(res.status).to.equal(201);
+  });
+  test("Created plan has an ID and starts as draft", function () {
+    expect(res.body.data.id).to.be.a("string");
+    expect(res.body.data.status).to.equal("draft");
+  });
+}

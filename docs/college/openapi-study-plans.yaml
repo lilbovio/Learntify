@@ -9,8 +9,10 @@
   'license':
     'name': 'MIT'
 'servers':
+  - 'url': 'http://localhost:5174'
+    'description': 'Recommended local demo through the account client proxy; select Local in Bruno.'
   - 'url': 'http://localhost:8788'
-    'description': 'Demo on the local account-enabled Worker. No production deployment.'
+    'description': 'Direct local account Worker. Writes still require Origin http://localhost:5174. Hosted alpha readiness is tracked separately.'
 'tags':
   - 'name': 'Study plans'
     'description': 'Private learning plans owned by the authenticated account.'
@@ -168,7 +170,7 @@
         '403':
           '$ref': '#/components/responses/Forbidden'
         '429':
-          'description': 'Daily write capacity reached, or POST exceeds 50 plans. Existing input is preserved; daily limits include Retry-After.'
+          'description': 'Daily write capacity reached. Retry-After indicates the UTC reset.'
         '503':
           'description': 'Private writes are temporarily paused.'
         '413':
@@ -447,7 +449,7 @@
           'example':
             'error':
               'code': 'SLUG_CONFLICT'
-              'message': 'A study plan already uses this slug.'
+              'message': 'A plan with this slug already exists.'
             'meta':
               'requestId': 'example-request-id'
     'InternalError':
@@ -459,7 +461,7 @@
           'example':
             'error':
               'code': 'INTERNAL_ERROR'
-              'message': 'Unable to complete the request.'
+              'message': 'The request could not be completed.'
             'meta':
               'requestId': 'example-request-id'
     'Forbidden':
@@ -483,6 +485,6 @@
           'example':
             'error':
               'code': 'PAYLOAD_TOO_LARGE'
-              'message': 'Request body is too large.'
+              'message': 'Study plan is too large.'
             'meta':
               'requestId': 'example-request-id'

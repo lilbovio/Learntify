@@ -1,0 +1,4 @@
+*.local.bru
+.env*
+.bruno/
+results/

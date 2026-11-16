@@ -1,0 +1,31 @@
+meta {
+  name: 09 Invalid input
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/v1/study-plans
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "slug": "{{planSlug}}",
+    "title": "",
+    "description": "Practice variables, arrays and functions.",
+    "weeklyMinutes": 0
+  }
+}
+
+tests {
+  test("HTTP 400", function () {
+    expect(res.status).to.equal(400);
+  });
+}
