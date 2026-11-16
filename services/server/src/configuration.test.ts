@@ -41,6 +41,14 @@ it('validates exact HTTPS origins and complete preview bindings without accessin
     } as unknown as NonNullable<ProductionBindings['DB']>,
   };
   expect(readAccountConfiguration(env).kind).toBe('ready');
+  expect(readAccountConfiguration(env)).toMatchObject({ allowSignUp: false });
+  const publicBindings = { ...env, ACCOUNT_MODE: 'public-alpha' };
+  delete publicBindings.PREVIEW_EMAILS;
+  expect(readAccountConfiguration(publicBindings)).toMatchObject({
+    kind: 'ready',
+    allowSignUp: true,
+    previewEmails: new Set(),
+  });
   expect(readAccountConfiguration({ ...env, PRIVATE_WRITES: 'paused' })).toMatchObject({
     kind: 'ready',
     writesPaused: true,

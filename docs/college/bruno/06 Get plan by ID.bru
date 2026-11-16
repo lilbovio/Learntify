@@ -1,0 +1,24 @@
+meta {
+  name: 06 Get plan by ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/study-plans/{{planId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+}
+
+tests {
+  test("HTTP 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("Response belongs to our plan", function () {
+    expect(res.body.data.id).to.equal(bru.getVar("planId"));
+  });
+}

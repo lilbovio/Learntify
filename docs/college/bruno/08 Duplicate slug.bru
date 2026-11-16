@@ -1,0 +1,31 @@
+meta {
+  name: 08 Duplicate slug
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/v1/study-plans
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "slug": "{{planSlug}}",
+    "title": "JavaScript foundations",
+    "description": "Practice variables, arrays and functions.",
+    "weeklyMinutes": 180
+  }
+}
+
+tests {
+  test("HTTP 409", function () {
+    expect(res.status).to.equal(409);
+  });
+}

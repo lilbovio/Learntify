@@ -58,6 +58,7 @@ it('rejects public access, disabled mode, extra recipients and incomplete config
     403,
   );
   for (const change of [
+    { ACCOUNT_MODE: 'public-alpha' },
     { EMAIL_FROM: 'other@example.test' },
     { PREVIEW_EMAILS: 'one@example.test,two@example.test' },
     { RESEND_API_KEY: '' },

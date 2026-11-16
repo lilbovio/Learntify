@@ -1,0 +1,21 @@
+meta {
+  name: 10 Delete plan
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/study-plans/{{planId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+}
+
+tests {
+  test("HTTP 204", function () {
+    expect(res.status).to.equal(204);
+  });
+}

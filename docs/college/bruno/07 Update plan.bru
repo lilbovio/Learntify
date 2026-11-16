@@ -1,0 +1,38 @@
+meta {
+  name: 07 Update plan
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/v1/study-plans/{{planId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Interview preparation",
+    "description": "Explain functions and arrays out loud.",
+    "weeklyMinutes": 240,
+    "status": "active"
+  }
+}
+
+tests {
+  test("HTTP 200", function () {
+    expect(res.status).to.equal(200);
+  });
+  test("Response belongs to our plan", function () {
+    expect(res.body.data.id).to.equal(bru.getVar("planId"));
+  });
+  test("Update is applied", function () {
+    expect(res.body.data.weeklyMinutes).to.equal(240);
+    expect(res.body.data.status).to.equal("active");
+  });
+}

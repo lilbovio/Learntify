@@ -1,0 +1,21 @@
+meta {
+  name: 13 Unauthenticated list
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/v1/study-plans
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{baseUrl}}
+}
+
+tests {
+  test("HTTP 401", function () {
+    expect(res.status).to.equal(401);
+  });
+}
